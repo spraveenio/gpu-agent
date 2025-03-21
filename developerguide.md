@@ -33,14 +33,14 @@ northbound definitions.
 sequenceDiagram
    actor user/client
    user/client ->> gpuagent : gRPC request
-   gpuagent ->> svc : function call
-   svc ->> smi : function call
-   smi ->> libamdsmi : function call
+   gpuagent ->> svc : data marshal
+   svc ->> smi : smi call
+   smi ->> libamdsmi : amdsmi call
    libamdsmi ->> gpudriver : AMD GPU HW
-   gpudriver -->> libamdsmi : function response
-   libamdsmi -->> smi : function response
-   smi -->> svc : data marshal/unmarshal
-   svc -->> gpuagent : data marshal/unmarshal
+   gpudriver -->> libamdsmi : driver response
+   libamdsmi -->> smi : amdsmi response
+   smi -->> svc : smi response
+   svc -->> gpuagent : data unmarshal
    gpuagent -->> user/client : gRPC response
 ```
 
