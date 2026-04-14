@@ -780,6 +780,7 @@ smi_fill_ecc_stats_ (aga_gpu_handle_t gpu_handle,
     stats->total_correctable_errors = total_correctable_count;
     stats->total_uncorrectable_errors = total_uncorrectable_count;
     stats->total_deferred_errors = total_deferred_count;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -847,7 +848,7 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
     amdsmi_engine_usage_t usage_info = {};
 
     // fill the power and voltage info
-    amdsmi_ret = amdsmi_get_power_info(gpu_handle, 0, &power_info);
+    amdsmi_ret = amdsmi_get_power_info(gpu_handle, &power_info);
     if (unlikely(amdsmi_ret != AMDSMI_STATUS_SUCCESS)) {
         AGA_TRACE_ERR("Failed to get power information for GPU {}, err {}",
                       gpu_handle, amdsmi_ret);
@@ -1301,8 +1302,8 @@ smi_gpu_init_immutable_attrs (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec,
     amdsmi_fw_info_t fw_info;
     amdsmi_status_t amdsmi_ret;
     amdsmi_vbios_info_t vbios_info;
-    amdsmi_board_info_t board_info;
-    amdsmi_driver_info_t driver_info;
+    amdsmi_board_info_t board_info = {};
+    amdsmi_driver_info_t driver_info = {};
     amdsmi_virtualization_mode_t mode;
 
     // fill immutable attributes in spec

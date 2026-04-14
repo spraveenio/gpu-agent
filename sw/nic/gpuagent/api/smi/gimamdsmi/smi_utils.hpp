@@ -99,87 +99,16 @@ smi_to_aga_virtualization_mode (amdsmi_virtualization_mode_t virt_mode)
     return AGA_VIRTUALIZATION_MODE_UNKNOWN;
 }
 
-/// \brief convert amdsmi VRAM vendor to aga VRAM vendor
-/// \param[in] vendor    amdsmi vendor
-/// \return    aga vendor
-static inline aga_vram_vendor_t
-smi_to_aga_vram_vendor (amdsmi_vram_vendor_t vendor)
-{
-    switch (vendor) {
-    case AMDSMI_VRAM_VENDOR_SAMSUNG:
-        return AGA_VRAM_VENDOR_SAMSUNG;
-    case AMDSMI_VRAM_VENDOR_INFINEON:
-        return AGA_VRAM_VENDOR_INFINEON;
-    case AMDSMI_VRAM_VENDOR_ELPIDA:
-        return AGA_VRAM_VENDOR_ELPIDA;
-    case AMDSMI_VRAM_VENDOR_ETRON:
-        return AGA_VRAM_VENDOR_ETRON;
-    case AMDSMI_VRAM_VENDOR_NANYA:
-        return AGA_VRAM_VENDOR_NANYA;
-    case AMDSMI_VRAM_VENDOR_HYNIX:
-        return AGA_VRAM_VENDOR_HYNIX;
-    case AMDSMI_VRAM_VENDOR_MOSEL:
-        return AGA_VRAM_VENDOR_MOSEL;
-    case AMDSMI_VRAM_VENDOR_WINBOND:
-        return AGA_VRAM_VENDOR_WINBOND;
-    case AMDSMI_VRAM_VENDOR_ESMT:
-        return AGA_VRAM_VENDOR_ESMT;
-    case AMDSMI_VRAM_VENDOR_MICRON:
-        return AGA_VRAM_VENDOR_MICRON;
-    case AMDSMI_VRAM_VENDOR_UNKNOWN:
-        return AGA_VRAM_VENDOR_UNKNOWN;
-    default:
-        break;
-    }
-    return AGA_VRAM_VENDOR_NONE;
-}
-
-/// \brief convert amdsmi VRAM vendor to string
-/// \param[in]  vendor      amdsmi vendor
-/// \param[out] vendor_str  amdsmi vendor string
-/// \param[in]  str_size    amdsmi vendor string maximum size
+/// \brief copy amdsmi VRAM vendor string to output buffer
+/// \param[in]  vendor_src  amdsmi vendor string (from amdsmi_vram_info_t)
+/// \param[out] vendor_str  output vendor string
+/// \param[in]  str_size    output buffer maximum size
 static inline void
-smi_vram_vendor_to_string (amdsmi_vram_vendor_t vendor, char *vendor_str,
+smi_vram_vendor_to_string (const char *vendor_src, char *vendor_str,
                            uint32_t str_size)
 {
-    switch (vendor) {
-    case AMDSMI_VRAM_VENDOR_SAMSUNG:
-        strncpy(vendor_str, "samsung", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_INFINEON:
-        strncpy(vendor_str, "infineon", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_ELPIDA:
-        strncpy(vendor_str, "elpida", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_ETRON:
-        strncpy(vendor_str, "etron", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_NANYA:
-        strncpy(vendor_str, "nanya", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_HYNIX:
-        strncpy(vendor_str, "hynix", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_MOSEL:
-        strncpy(vendor_str, "mosel", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_WINBOND:
-        strncpy(vendor_str, "winbond", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_ESMT:
-        strncpy(vendor_str, "esmt", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_MICRON:
-        strncpy(vendor_str, "micron", str_size);
-        break;
-    case AMDSMI_VRAM_VENDOR_UNKNOWN:
-        strncpy(vendor_str, "unknown", str_size);
-        break;
-    default:
-        strncpy(vendor_str, "-", str_size);
-        break;
-    }
+    strncpy(vendor_str, vendor_src, str_size);
+    vendor_str[str_size - 1] = '\0';
 }
 
 /// \brief convert amdsmi clock type to aga clock type

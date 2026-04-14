@@ -349,7 +349,7 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
             }
             break;
         case AGA_GPU_WATCH_ATTR_ID_POWER_USAGE:
-            amdsmi_ret = amdsmi_get_power_info(gpu_handle, 0, &power_info);
+            amdsmi_ret = amdsmi_get_power_info(gpu_handle, &power_info);
             if (amdsmi_ret == AMDSMI_STATUS_SUCCESS) {
                 if (power_info.socket_power != 65535) {
                     watch_db->watch_info[gpu_id].power_usage =
