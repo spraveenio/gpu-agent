@@ -71,6 +71,23 @@ uint64_t gpu_get_unique_id(uint32_t gpu_idx);
 /// return      pointer to event
 void *event_get(void);
 
+/// \brief      get amdsmi_init call count (for test assertions)
+/// \return     number of times amdsmi_init has been called
+uint32_t smi_mock_get_init_count(void);
+
+/// \brief      get amdsmi_shut_down call count (for test assertions)
+/// \return     number of times amdsmi_shut_down has been called
+uint32_t smi_mock_get_shut_down_count(void);
+
+/// \brief      reset init/shutdown counters to zero
+void smi_mock_reset_init_counters(void);
+
+/// \brief      increment amdsmi_init counter (called by mock amdsmi_init)
+void smi_mock_increment_init_count(void);
+
+/// \brief      increment amdsmi_shut_down counter (called by mock shutdown)
+void smi_mock_increment_shut_down_count(void);
+
 }    // namespace aga
 
 #endif    // __AGA_API_SMI_API_HPP__

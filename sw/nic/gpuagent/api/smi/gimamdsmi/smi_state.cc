@@ -21,6 +21,8 @@
 ///
 //----------------------------------------------------------------------------
 
+#include <cstdlib>
+#include <memory>
 #include <vector>
 extern "C" {
 #include "nic/third-party/rocm/gim_amd_smi_lib/include/amd_smi/amdsmi.h"
@@ -31,6 +33,7 @@ extern "C" {
 #include "nic/gpuagent/api/aga_state.hpp"
 #include "nic/gpuagent/api/smi/smi_state.hpp"
 #include "nic/gpuagent/api/smi/smi_watch.hpp"
+#include "nic/gpuagent/api/smi/gimamdsmi/smi_session.hpp"
 #include "nic/gpuagent/api/smi/gimamdsmi/smi_utils.hpp"
 
 using std::vector;
@@ -413,6 +416,15 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
 
 sdk_ret_t
 smi_state::watcher_update_watch_db(aga_gpu_watch_db_t *watch_db) {
+    // acquire amdsmi session if in lazy init mode
+    std::unique_ptr<smi_session> sess;
+    if (lazy_init_) {
+        sess = std::make_unique<smi_session>();
+        if (!sess->ok()) {
+            AGA_TRACE_ERR("Per-request smi_session init failed in watcher");
+            return sess->ret();
+        }
+    }
     // loop through all gpu devices
     for (uint32_t gpu = 0; gpu < num_gpu_; gpu++) {
         // update watch db
@@ -694,23 +706,57 @@ smi_state::spawn_event_monitor_thread_(void) {
 sdk_ret_t
 smi_state::init(aga_api_init_params_t *init_params) {
     sdk_ret_t ret;
-    amdsmi_status_t status;
     aga_gpu_profile_t gpu[AGA_MAX_GPU];
 
-    // initialize smi library
-    status = amdsmi_init(AMDSMI_INIT_AMD_GPUS);
-    if (unlikely(status != AMDSMI_STATUS_SUCCESS)) {
-        AGA_TRACE_ERR("Failed to initialize amd smi library, err {}", status);
-        return amdsmi_ret_to_sdk_ret(status);
+    // check if per-request (lazy) init mode is requested
+    const char *lazy = std::getenv("AGA_SMI_LAZY_INIT");
+    lazy_init_ = (lazy != NULL && lazy[0] == '1');
+    if (lazy_init_) {
+        AGA_TRACE_INFO("AGA_SMI_LAZY_INIT enabled: amdsmi will be "
+                       "initialized per-request");
     }
-    // discover gpus
-    ret = aga::smi_discover_gpus(&num_gpu_, gpu);
-    if (ret != SDK_RET_OK) {
-        return ret;
+
+    // use an smi_session for the one-shot discovery regardless of mode;
+    // in persistent mode we immediately re-init after the session ends
+    {
+        smi_session session;
+        if (!session.ok()) {
+            AGA_TRACE_ERR("smi_session failed during init, err {}",
+                          session.amdsmi_ret());
+            return session.ret();
+        }
+        // discover gpus
+        ret = aga::smi_discover_gpus(&num_gpu_, gpu);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+        for (uint32_t i = 0; i < num_gpu_; i++) {
+            gpu_handles_[i] = gpu[i].handle;
+        }
     }
-    for (uint32_t i = 0; i < num_gpu_; i++) {
-        gpu_handles_[i] = gpu[i].handle;
+    // session is destroyed here (amdsmi_shut_down called)
+
+    if (!lazy_init_) {
+        // persistent mode: keep amdsmi initialized for the process lifetime
+        amdsmi_status_t status = amdsmi_init(AMDSMI_INIT_AMD_GPUS);
+        if (unlikely(status != AMDSMI_STATUS_SUCCESS)) {
+            AGA_TRACE_ERR("Failed to re-initialize amd smi library in "
+                          "persistent mode, err {}", status);
+            return amdsmi_ret_to_sdk_ret(status);
+        }
+        // refresh handles after re-init
+        aga_gpu_profile_t gpu2[AGA_MAX_GPU];
+        uint32_t ngpu = 0;
+        ret = aga::smi_discover_gpus(&ngpu, gpu2);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+        num_gpu_ = ngpu;
+        for (uint32_t i = 0; i < num_gpu_; i++) {
+            gpu_handles_[i] = gpu2[i].handle;
+        }
     }
+
     // spawn event monitor thread
     spawn_event_monitor_thread_();
     // spawn watcher thread

@@ -21,6 +21,7 @@
 ///
 //----------------------------------------------------------------------------
 
+#include <memory>
 #include <sstream>
 #include <iomanip>
 extern "C" {
@@ -32,6 +33,7 @@ extern "C" {
 #include "nic/gpuagent/api/aga_state.hpp"
 #include "nic/gpuagent/api/smi/smi_api.hpp"
 #include "nic/gpuagent/api/smi/smi_state.hpp"
+#include "nic/gpuagent/api/smi/gimamdsmi/smi_session.hpp"
 #include "nic/gpuagent/api/smi/gimamdsmi/smi_utils.hpp"
 
 // TODO:
@@ -43,6 +45,22 @@ namespace aga {
 #define AMDSMI_UINT32_INVALID_VAL       0xffffffff
 #define AMDSMI_UINT64_INVALID_VAL       0xffffffffffffffff
 #define CPER_BUF_SIZE                   (4 * 1024 * 1024) // 4 MB
+
+/// \brief  optional per-request session guard
+///         In lazy_init mode, opens/closes amdsmi around each API call.
+///         In persistent mode this is a no-op (session stays open).
+///         Usage:
+///             AGA_SMI_SESSION_GUARD();
+///             // ... amdsmi calls using the already-live handles ...
+#define AGA_SMI_SESSION_GUARD()                                     \
+    std::unique_ptr<smi_session> _smi_sess_;                        \
+    if (g_smi_state.lazy_init()) {                                  \
+        _smi_sess_ = std::make_unique<smi_session>();               \
+        if (!_smi_sess_->ok()) {                                    \
+            AGA_TRACE_ERR("Per-request smi_session init failed");   \
+            return _smi_sess_->ret();                               \
+        }                                                           \
+    }
 
 /// \brief struct to be used as ctxt when walking GPU db to build topology
 typedef struct gpu_topo_walk_ctxt_s {
@@ -125,6 +143,7 @@ smi_fill_gpu_clock_frequency_spec_ (aga_gpu_handle_t gpu_handle,
 sdk_ret_t
 smi_gpu_fill_spec (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec)
 {
+    AGA_SMI_SESSION_GUARD();
     amdsmi_status_t amdsmi_ret;
     amdsmi_power_cap_info_t power_cap_info = {};
 
@@ -795,6 +814,7 @@ sdk_ret_t
 smi_gpu_fill_status (aga_gpu_handle_t gpu_handle, uint32_t gpu_id,
                      aga_gpu_spec_t *spec, aga_gpu_status_t *status)
 {
+    AGA_SMI_SESSION_GUARD();
     // fill fields not avaiable with gim amdsmi library
     status->xgmi_status.width = AMDSMI_UINT64_INVALID_VAL;
     status->xgmi_status.speed = AMDSMI_UINT64_INVALID_VAL;
@@ -840,6 +860,7 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
                     aga_gpu_handle_t first_partition_handle,
                     aga_gpu_stats_t *stats)
 {
+    AGA_SMI_SESSION_GUARD();
     sdk_ret_t ret;
     int64_t temperature;
     amdsmi_status_t amdsmi_ret;
@@ -1019,6 +1040,7 @@ sdk_ret_t
 smi_gpu_update (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec,
                 uint64_t upd_mask)
 {
+    AGA_SMI_SESSION_GUARD();
     sdk_ret_t ret;
     std::ofstream of;
     std::string dev_path;
@@ -1140,6 +1162,7 @@ smi_gpu_fill_device_topology (aga_gpu_handle_t gpu_handle,
 sdk_ret_t
 smi_get_parent_gpu_uuid (aga_gpu_handle_t gpu_handle, aga_obj_key_t *parent_key)
 {
+    AGA_SMI_SESSION_GUARD();
     amdsmi_bdf_t pcie_bdf;
     amdsmi_status_t status;
     amdsmi_asic_info_t asic_info;
@@ -1259,6 +1282,7 @@ smi_fill_gpu_profile_ (uint32_t id, aga_gpu_handle_t handle,
 sdk_ret_t
 smi_discover_gpus (uint32_t *num_gpu, aga_gpu_profile_t *gpu)
 {
+    AGA_SMI_SESSION_GUARD();
     sdk_ret_t ret;
     uint32_t num_procs;
     amdsmi_status_t status;
@@ -1299,6 +1323,7 @@ sdk_ret_t
 smi_gpu_init_immutable_attrs (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec,
                               aga_gpu_status_t *status)
 {
+    AGA_SMI_SESSION_GUARD();
     amdsmi_fw_info_t fw_info;
     amdsmi_status_t amdsmi_ret;
     amdsmi_vbios_info_t vbios_info;
@@ -1397,6 +1422,7 @@ sdk_ret_t
 smi_gpu_get_cper_entries (aga_gpu_handle_t gpu_handle,
                           aga_cper_severity_t severity, aga_cper_info_t *info)
 {
+    AGA_SMI_SESSION_GUARD();
     char *cper_data;
     char *cper_buffer;
     uint64_t cursor = 0;
