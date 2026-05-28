@@ -59,11 +59,15 @@ public:
     smi_state() {
         num_gpu_ = 0;
         initialized_ = false;
+        lazy_init_ = false;
         watcher_thread_ = NULL;
     }
 
     /// \brief    destructor
     ~smi_state() {}
+
+    /// \brief    return true if per-request (lazy) init mode is enabled
+    bool lazy_init(void) const { return lazy_init_; }
 
     /// \brief    initialization routine
     /// \param[in] init_params    initialization parameters
@@ -180,6 +184,8 @@ private:
     bool initialized_;
     /// no. of GPUs in the system
     uint32_t num_gpu_;
+    /// true if AGA_SMI_LAZY_INIT=1 (per-request session mode)
+    bool lazy_init_;
     /// gpu handles
     aga_gpu_handle_t gpu_handles_[AGA_MAX_GPU];
     /// gpu cpunter handles

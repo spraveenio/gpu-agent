@@ -30,7 +30,42 @@
 /// global array of GPU handles
 static aga_gpu_handle_t g_gpu_handles[AGA_MAX_GPU];
 
+/// amdsmi init/shutdown call counters (for test assertions)
+static uint32_t g_amdsmi_init_count = 0;
+static uint32_t g_amdsmi_shut_down_count = 0;
+
 namespace aga {
+
+uint32_t
+smi_mock_get_init_count (void)
+{
+    return g_amdsmi_init_count;
+}
+
+uint32_t
+smi_mock_get_shut_down_count (void)
+{
+    return g_amdsmi_shut_down_count;
+}
+
+void
+smi_mock_reset_init_counters (void)
+{
+    g_amdsmi_init_count = 0;
+    g_amdsmi_shut_down_count = 0;
+}
+
+void
+smi_mock_increment_init_count (void)
+{
+    g_amdsmi_init_count++;
+}
+
+void
+smi_mock_increment_shut_down_count (void)
+{
+    g_amdsmi_shut_down_count++;
+}
 
 aga_gpu_handle_t
 event_buffer_get_gpu_handle (void *event_buffer_, uint32_t event_idx)
