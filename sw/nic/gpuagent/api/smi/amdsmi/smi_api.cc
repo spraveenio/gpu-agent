@@ -134,7 +134,9 @@ smi_fill_gpu_clock_frequency_spec_ (aga_gpu_handle_t gpu_handle,
 }
 
 sdk_ret_t
-smi_gpu_fill_spec (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec)
+smi_gpu_fill_spec (aga_gpu_handle_t gpu_handle,
+                   const aga_obj_key_t *gpu_key,
+                   aga_gpu_spec_t *spec)
 {
     uint32_t value_32;
     amdsmi_status_t amdsmi_ret;
@@ -779,7 +781,9 @@ smi_get_gpu_partition_id (aga_gpu_handle_t gpu_handle, uint32_t *partition_id)
 }
 
 sdk_ret_t
-smi_gpu_fill_status (aga_gpu_handle_t gpu_handle, uint32_t gpu_id,
+smi_gpu_fill_status (aga_gpu_handle_t gpu_handle,
+                     const aga_obj_key_t *gpu_key,
+                     uint32_t gpu_id,
                      aga_gpu_spec_t *spec, aga_gpu_status_t *status)
 {
     amdsmi_status_t amdsmi_ret;
@@ -1248,6 +1252,7 @@ smi_fill_vram_usage_ (aga_gpu_handle_t gpu_handle,
 
 sdk_ret_t
 smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
+                    const aga_obj_key_t *gpu_key,
                     bool is_partitioned,
                     uint32_t partition_id,
                     aga_gpu_handle_t first_partition_handle,
@@ -1672,7 +1677,9 @@ smi_gpu_power_cap_update_ (aga_gpu_handle_t gpu_handle,
 }
 
 sdk_ret_t
-smi_gpu_update (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec,
+smi_gpu_update (aga_gpu_handle_t gpu_handle,
+                const aga_obj_key_t *gpu_key,
+                aga_gpu_spec_t *spec,
                 uint64_t upd_mask)
 {
     sdk_ret_t ret;
@@ -1853,6 +1860,7 @@ gpu_topo_walk_cb (void *obj, void *ctxt)
 
 sdk_ret_t
 smi_gpu_fill_device_topology (aga_gpu_handle_t gpu_handle,
+                              const aga_obj_key_t *gpu_key,
                               aga_device_topology_info_t *info)
 {
     gpu_entry *gpu;
@@ -1877,7 +1885,9 @@ smi_gpu_fill_device_topology (aga_gpu_handle_t gpu_handle,
 /// \param[in]  gpu_handle  GPU handle
 /// \param[out] key         aga_obj_key_t of the parent GPU
 sdk_ret_t
-smi_get_parent_gpu_uuid (aga_gpu_handle_t gpu_handle, aga_obj_key_t *parent_key)
+smi_get_parent_gpu_uuid (aga_gpu_handle_t gpu_handle,
+                         const aga_obj_key_t *gpu_key,
+                         aga_obj_key_t *parent_key)
 {
     amdsmi_bdf_t pcie_bdf;
     amdsmi_status_t status;
@@ -2085,7 +2095,9 @@ smi_discover_gpus (uint32_t *num_gpu, aga_gpu_profile_t *gpu)
 }
 
 sdk_ret_t
-smi_gpu_init_immutable_attrs (aga_gpu_handle_t gpu_handle, aga_gpu_spec_t *spec,
+smi_gpu_init_immutable_attrs (aga_gpu_handle_t gpu_handle,
+                              const aga_obj_key_t *gpu_key,
+                              aga_gpu_spec_t *spec,
                               aga_gpu_status_t *status)
 {
     uint64_t value_64;
@@ -2215,6 +2227,7 @@ timestamp_string_from_cper_timestamp (amdsmi_cper_timestamp_t *ts)
 
 sdk_ret_t
 smi_gpu_get_cper_entries (aga_gpu_handle_t gpu_handle,
+                          const aga_obj_key_t *gpu_key,
                           aga_cper_severity_t severity, aga_cper_info_t *info)
 {
     char *cper_data;
