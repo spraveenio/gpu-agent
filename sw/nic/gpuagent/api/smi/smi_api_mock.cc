@@ -215,7 +215,8 @@ sdk_ret_t
 smi_gpu_fill_status (aga_gpu_handle_t gpu_handle,
                      const aga_obj_key_t *gpu_key,
                      uint32_t gpu_id,
-                     aga_gpu_spec_t *spec, aga_gpu_status_t *status)
+                     aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                     bool skip_process)
 {
     status->index = gpu_id;
     status->handle = gpu_handle;
@@ -266,7 +267,9 @@ smi_gpu_fill_status (aga_gpu_handle_t gpu_handle,
     status->xgmi_status.error_status = AGA_GPU_XGMI_STATUS_NO_ERROR;
     // fill total memory
     // fill kfd pid info
-    smi_fill_gpu_kfd_pid_status_(gpu_handle, status);
+    if (!skip_process) {
+        smi_fill_gpu_kfd_pid_status_(gpu_handle, status);
+    }
     status->partition_id = 0;
     smi_fill_gpu_enumeration_id_status_(gpu_handle, status);
     return SDK_RET_OK;

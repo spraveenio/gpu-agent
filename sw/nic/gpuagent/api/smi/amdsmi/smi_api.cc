@@ -827,7 +827,8 @@ sdk_ret_t
 smi_gpu_fill_status (aga_gpu_handle_t gpu_handle,
                      const aga_obj_key_t *gpu_key,
                      uint32_t gpu_id,
-                     aga_gpu_spec_t *spec, aga_gpu_status_t *status)
+                     aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                     bool skip_process)
 {
     amdsmi_status_t amdsmi_ret;
     amdsmi_xgmi_status_t xgmi_st;
@@ -867,8 +868,10 @@ smi_gpu_fill_status (aga_gpu_handle_t gpu_handle,
     } else {
         status->xgmi_status.error_status = smi_to_aga_gpu_xgmi_error(xgmi_st);
     }
-    // fill list of pids using the GPU
-    smi_fill_gpu_kfd_pid_status_(gpu_handle, gpu_id, status);
+    if (!skip_process) {
+        // fill list of pids using the GPU
+        smi_fill_gpu_kfd_pid_status_(gpu_handle, gpu_id, status);
+    }
     // TODO: oper status
     // TODO: RAS status
     return SDK_RET_OK;

@@ -894,9 +894,11 @@ sdk_ret_t
 smi_gpu_fill_status (aga_gpu_handle_t gpu_handle_in,
                      const aga_obj_key_t *gpu_key,
                      uint32_t gpu_id,
-                     aga_gpu_spec_t *spec, aga_gpu_status_t *status)
+                     aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                     bool skip_process)
 {
     AGA_SMI_SESSION_GUARD(gpu_key, gpu_handle_in);
+    (void)skip_process;
 
     // fill fields not avaiable with gim amdsmi library
     status->xgmi_status.width = AMDSMI_UINT64_INVALID_VAL;

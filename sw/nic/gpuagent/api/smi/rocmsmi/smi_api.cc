@@ -401,7 +401,8 @@ smi_fill_pcie_status_ (uint32_t gpu_id,
 
 sdk_ret_t
 smi_gpu_fill_status (aga_gpu_handle_t gpu_handle, uint32_t gpu_id,
-                     aga_gpu_spec_t *spec, aga_gpu_status_t *status)
+                     aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                     bool skip_process)
 {
     uint32_t i;
     uint64_t ver, value_64;

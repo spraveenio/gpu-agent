@@ -815,6 +815,8 @@ message GPU {
 message GPUGetRequest {
   // list of GPU uuids
   repeated bytes Id = 1;
+  // skip GPU process information
+  bool SkipProcess = 2;
 }
 
 // response to GPU get request

@@ -999,7 +999,8 @@ sdk_ret_t aga_gpu_create(_In_ aga_gpu_spec_t *spec);
 /// \param[in]  key  key of the gpu object
 /// \param[out] info information
 /// \return     #SDK_RET_OK on success, failure status code on error
-sdk_ret_t aga_gpu_read(_In_ aga_obj_key_t *key, _Out_ aga_gpu_info_t *info);
+sdk_ret_t aga_gpu_read(_In_ aga_obj_key_t *key, _Out_ aga_gpu_info_t *info,
+                       bool skip_process = false);
 
 typedef void (*gpu_read_cb_t)(aga_gpu_info_t *info, void *ctxt);
 
@@ -1007,7 +1008,8 @@ typedef void (*gpu_read_cb_t)(aga_gpu_info_t *info, void *ctxt);
 /// \param[in]  cb      callback function
 /// \param[in]  ctxt    opaque context passed to cb
 /// \return #SDK_RET_OK on success, failure status code on error
-sdk_ret_t aga_gpu_read_all(_In_ gpu_read_cb_t gpu_read_cb, _In_ void *ctxt);
+sdk_ret_t aga_gpu_read_all(_In_ gpu_read_cb_t gpu_read_cb, _In_ void *ctxt,
+                           bool skip_process = false);
 
 /// \brief      function to get compute partition info of a given physical gpu
 ///             which has been partitioned

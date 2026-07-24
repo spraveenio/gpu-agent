@@ -162,7 +162,8 @@ gpu_entry::fill_stats_(aga_gpu_stats_t *stats) {
 }
 
 void
-gpu_entry::fill_status_(aga_gpu_spec_t *spec, aga_gpu_status_t *status) {
+gpu_entry::fill_status_(aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                        bool skip_process) {
     if (child_gpus_.size()) {
         status->num_gpu_partition = child_gpus_.size();
         // for parent GPUs get uuids of all children
@@ -175,7 +176,7 @@ gpu_entry::fill_status_(aga_gpu_spec_t *spec, aga_gpu_status_t *status) {
         if (parent_gpu_.valid()) {
             status->physical_gpu = parent_gpu_;
         }
-        smi_gpu_fill_status(handle_, &key_, id_, spec, status);
+        smi_gpu_fill_status(handle_, &key_, id_, spec, status, skip_process);
     }
 }
 
@@ -201,9 +202,9 @@ gpu_entry::fill_spec_(aga_gpu_spec_t *spec) {
 }
 
 sdk_ret_t
-gpu_entry::read(aga_gpu_info_t *info) {
+gpu_entry::read(aga_gpu_info_t *info, bool skip_process) {
     fill_spec_(&info->spec);
-    fill_status_(&info->spec, &info->status);
+    fill_status_(&info->spec, &info->status, skip_process);
     fill_stats_(&info->stats);
     return SDK_RET_OK;
 }

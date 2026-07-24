@@ -101,7 +101,7 @@ public:
     /// \brief          read config
     /// \param[out]     info pointer to the info object
     /// \return         SDK_RET_OK on success, failure status code on error
-    sdk_ret_t read(aga_gpu_info_t *info);
+    sdk_ret_t read(aga_gpu_info_t *info, bool skip_process = false);
 
     /// \brief return stringified key of the object (for debugging)
     virtual string key2str(void) const override {
@@ -296,7 +296,8 @@ private:
     /// \brief      fill the gpu operational status
     /// \param[in]  spec config specification
     /// \param[out] status operational status
-    void fill_status_(aga_gpu_spec_t *spec, aga_gpu_status_t *status);
+    void fill_status_(aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                      bool skip_process);
 
     /// \brief      fill the gpu statistics
     /// \param[out] stats statistics

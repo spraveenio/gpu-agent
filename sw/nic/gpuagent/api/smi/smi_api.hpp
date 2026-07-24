@@ -77,7 +77,8 @@ sdk_ret_t smi_gpu_fill_spec(aga_gpu_handle_t handle,
 sdk_ret_t smi_gpu_fill_status(aga_gpu_handle_t handle,
                               const aga_obj_key_t *gpu_key,
                               uint32_t id,
-                              aga_gpu_spec_t *spec, aga_gpu_status_t *status);
+                              aga_gpu_spec_t *spec, aga_gpu_status_t *status,
+                              bool skip_process = false);
 
 /// \brief    fill gpu object statistics
 /// \param[in] handle                   GPU handle (uuid refreshes inside)
