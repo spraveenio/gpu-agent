@@ -506,7 +506,9 @@ smi_gpu_fill_status (aga_gpu_handle_t gpu_handle, uint32_t gpu_id,
                 vc_data.curve.vc_points[i].voltage;
         }
     }
-    smi_fill_gpu_kfd_pid_status_(gpu_id, status);
+    if (!skip_process) {
+        smi_fill_gpu_kfd_pid_status_(gpu_id, status);
+    }
     // fill total memory
     rsmi_ret = rsmi_dev_memory_total_get(gpu_id, RSMI_MEM_TYPE_VRAM,
                                          &value_64);
