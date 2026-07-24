@@ -821,8 +821,9 @@ message GPUGetFilter {
 message GPUGetRequest {
   // list of GPU uuids
   repeated bytes Id = 1;
+  reserved 2;
   // GPU information filter
-  GPUGetFilter Filter = 2;
+  GPUGetFilter Filter = 3;
 }
 
 // response to GPU get request
