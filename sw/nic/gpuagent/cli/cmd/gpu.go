@@ -471,15 +471,19 @@ func gpuShowCmdHandler(cmd *cobra.Command, args []string) error {
 	}
 	respMsg := &aga.GPUGetResponse{}
 	var req *aga.GPUGetRequest
+	skipProcess := cmd == nil || (!cmd.Flags().Changed("yaml") &&
+		!cmd.Flags().Changed("json") && !cmd.Flags().Changed("status"))
 	if cmd != nil && cmd.Flags().Changed("id") {
 		// get specific GPU
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Id:     [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Filter: &aga.GPUGetFilter{SkipProcess: skipProcess},
 		}
 	} else {
 		// get all GPUs
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{},
+			Id:     [][]byte{},
+			Filter: &aga.GPUGetFilter{SkipProcess: skipProcess},
 		}
 	}
 
@@ -642,12 +646,14 @@ func gpuStatsShowCmdHandler(cmd *cobra.Command, args []string) error {
 	if cmd != nil && cmd.Flags().Changed("id") {
 		// get specific GPU
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Id:     [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Filter: &aga.GPUGetFilter{SkipProcess: true},
 		}
 	} else {
 		// get all GPUs
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{},
+			Id:     [][]byte{},
+			Filter: &aga.GPUGetFilter{SkipProcess: true},
 		}
 	}
 
@@ -694,12 +700,14 @@ func gpuAllShowCmdHandler(cmd *cobra.Command, args []string) error {
 	if cmd != nil && cmd.Flags().Changed("id") {
 		// get specific GPU
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Id:     [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Filter: &aga.GPUGetFilter{SkipProcess: true},
 		}
 	} else {
 		// get all GPUs
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{},
+			Id:     [][]byte{},
+			Filter: &aga.GPUGetFilter{SkipProcess: true},
 		}
 	}
 
@@ -2126,7 +2134,8 @@ func gpuUpdateCmdHandler(cmd *cobra.Command, args []string) error {
 	if cmd.Flags().Changed("id") {
 		// get specific GPU
 		req = &aga.GPUGetRequest{
-			Id: [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Id:     [][]byte{uuid.FromStringOrNil(gpuID).Bytes()},
+			Filter: &aga.GPUGetFilter{SkipProcess: true},
 		}
 	}
 	// connect to GPU agent

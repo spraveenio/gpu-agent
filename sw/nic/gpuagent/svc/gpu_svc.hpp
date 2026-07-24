@@ -48,14 +48,14 @@ aga_svc_gpu_get (const GPUGetRequest *proto_req, GPUGetResponse *proto_rsp)
     aga_api_trace_verbose("GPU", "Get", proto_req);
     if (proto_req->id_size() == 0) {
         ret = aga_gpu_read_all(aga_gpu_api_info_to_proto, proto_rsp,
-                               proto_req->skipprocess());
+                               proto_req->filter().skipprocess());
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
         return ret;
     }
     for (int i = 0; i < proto_req->id_size(); i ++) {
         aga_obj_key_proto_to_api_spec(&key, proto_req->id(i));
         memset(&info, 0, sizeof(aga_gpu_info_t));
-        ret = aga_gpu_read(&key, &info, proto_req->skipprocess());
+        ret = aga_gpu_read(&key, &info, proto_req->filter().skipprocess());
         if (unlikely(ret != SDK_RET_OK)) {
             proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
             break;
