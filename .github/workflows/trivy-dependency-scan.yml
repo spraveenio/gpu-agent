@@ -17,13 +17,42 @@ jobs:
   scan-go-dependencies:
     name: Scan Go dependencies
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 60
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Read Go version
+        id: go-version
+        run: |
+          version=$(awk '$1 == "go" { print $2; exit }' sw/nic/gpuagent/go.mod)
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build builder container
+        uses: docker/build-push-action@v6
+        with:
+          context: tools/build-container
+          file: tools/build-container/Dockerfile.rhel9
+          load: true
+          tags: gpuagent-builder-rhel:9
+          build-args: |
+            GO_VERSION=${{ steps.go-version.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build gpuagent
+        run: |
+          make gpuagent \
+            GIT_COMMIT=$(git rev-list -1 HEAD --abbrev-commit) \
+            BUILD_DATE=$(date +%Y-%m-%dT%H:%M:%S%z)
 
       - name: Scan dependencies with Trivy
         uses: aquasecurity/trivy-action@0.35.0
