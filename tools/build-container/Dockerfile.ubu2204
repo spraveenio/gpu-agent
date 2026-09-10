@@ -2,6 +2,7 @@
 # compilation and development tools pre-installed.
 ARG BUILD_BASE_IMAGE=ubuntu:22.04
 FROM ${BUILD_BASE_IMAGE}
+ARG GO_VERSION=1.25.13
 
 LABEL maintainer="praveenkumar.shanmugam@amd.com"
 
@@ -30,9 +31,9 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/github.com/Rocm/gpu-agent/
 
-RUN wget https://go.dev/dl/go1.25.13.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.25.13.linux-amd64.tar.gz && \
-    rm -f go1.25.13.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
+    rm -f go${GO_VERSION}.linux-amd64.tar.gz
 
 ADD ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
