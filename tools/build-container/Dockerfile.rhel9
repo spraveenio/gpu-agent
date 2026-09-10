@@ -2,6 +2,7 @@
 # compilation and development tools pre-installed.
 ARG BUILD_BASE_IMAGE=registry.access.redhat.com/ubi9/ubi:9.8
 FROM ${BUILD_BASE_IMAGE}
+ARG GO_VERSION=1.25.13
 
 LABEL maintainer="praveenkumar.shanmugam@amd.com"
 
@@ -28,9 +29,9 @@ RUN dnf install -y --allowerasing \
 
 RUN yum install -y sudo
 
-RUN wget https://go.dev/dl/go1.25.13.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.25.13.linux-amd64.tar.gz && \
-    rm -f go1.25.13.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
+    rm -f go${GO_VERSION}.linux-amd64.tar.gz
 
 ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
