@@ -10,10 +10,12 @@ CONTAINER_WORKDIR := /usr/src/github.com/ROCm/gpu-agent
 BUILD_DATE ?= $(shell date   +%Y-%m-%dT%H:%M:%S%z)
 GIT_COMMIT ?= $(shell git rev-list -1 HEAD --abbrev-commit)
 BUILD_BASE_IMAGE ?= registry.access.redhat.com/ubi9/ubi:9.4
+GO_VERSION ?= $(shell awk '$$1 == "go" { print $$2; exit }' sw/nic/gpuagent/go.mod)
 
 export BUILD_BASE_IMAGE
 export GPUAGENT_BLD_CONTAINER_IMAGE
 export GPUAGENT_BLD_CONTAINER_IMAGE_UBUNTU
+export GO_VERSION
 
 .PHONY: all
 all:
