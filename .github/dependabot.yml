@@ -3,9 +3,6 @@ multi-ecosystem-groups:
   gpuagent-build-and-go:
     schedule:
       interval: weekly
-      day: monday
-      time: "08:00"
-      timezone: Etc/UTC
 updates:
   - package-ecosystem: docker
     directory: /tools/build-container
