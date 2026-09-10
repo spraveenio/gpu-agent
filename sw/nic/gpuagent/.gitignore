@@ -1,2 +1,5 @@
 gen/
+!gen/
+!gen/go/
+!gen/go/*.go
 vendor
