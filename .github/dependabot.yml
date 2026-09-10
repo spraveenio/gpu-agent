@@ -1,12 +1,22 @@
 version: 2
-updates:
-  - package-ecosystem: docker
-    directory: /tools/build-container
+multi-ecosystem-groups:
+  gpuagent-build-and-go:
     schedule:
       interval: weekly
       day: monday
       time: "08:00"
       timezone: Etc/UTC
+updates:
+  - package-ecosystem: docker
+    directory: /tools/build-container
+    multi-ecosystem-group: gpuagent-build-and-go
+    open-pull-requests-limit: 1
+    labels:
+      - dependencies
+      - security
+  - package-ecosystem: gomod
+    directory: /sw/nic/gpuagent
+    multi-ecosystem-group: gpuagent-build-and-go
     open-pull-requests-limit: 1
     labels:
       - dependencies

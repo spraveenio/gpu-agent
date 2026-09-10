@@ -5,6 +5,8 @@ on:
     paths:
       - sw/nic/gpuagent/go.mod
       - sw/nic/gpuagent/go.sum
+      - tools/build-container/Dockerfile.rhel9
+      - tools/build-container/Dockerfile.ubu2204
   schedule:
     - cron: "0 8 * * 1"
   workflow_dispatch:
