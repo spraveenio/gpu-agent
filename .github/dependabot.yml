@@ -3,13 +3,13 @@ multi-ecosystem-groups:
   gpuagent-build-and-go:
     schedule:
       interval: weekly
+    open-pull-requests-limit: 1
 updates:
   - package-ecosystem: docker
     directory: /tools/build-container
     multi-ecosystem-group: gpuagent-build-and-go
     patterns:
       - "*"
-    open-pull-requests-limit: 1
     labels:
       - dependencies
       - security
@@ -18,7 +18,6 @@ updates:
     multi-ecosystem-group: gpuagent-build-and-go
     patterns:
       - "*"
-    open-pull-requests-limit: 1
     labels:
       - dependencies
       - security
