@@ -7,6 +7,8 @@ updates:
   - package-ecosystem: docker
     directory: /tools/build-container
     multi-ecosystem-group: gpuagent-build-and-go
+    patterns:
+      - "*"
     open-pull-requests-limit: 1
     labels:
       - dependencies
@@ -14,6 +16,8 @@ updates:
   - package-ecosystem: gomod
     directory: /sw/nic/gpuagent
     multi-ecosystem-group: gpuagent-build-and-go
+    patterns:
+      - "*"
     open-pull-requests-limit: 1
     labels:
       - dependencies
