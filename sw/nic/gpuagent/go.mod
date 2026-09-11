@@ -6,7 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.9.1
-	google.golang.org/grpc v1.69.0-dev
+	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -23,11 +23,6 @@ require (
 replace (
 	golang.org/x/net v0.30.0 => golang.org/x/net v0.38.0
 	golang.org/x/net v0.53.0 => golang.org/x/net v0.56.0
-)
-
-replace (
-	google.golang.org/grpc v1.69.0-dev => google.golang.org/grpc v1.82.1
-	google.golang.org/grpc v1.72.1 => google.golang.org/grpc v1.82.1
 )
 
 replace golang.org/x/sys v0.39.0 => golang.org/x/sys v0.44.0
