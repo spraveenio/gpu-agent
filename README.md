@@ -1,4 +1,5 @@
 # GPU Agent provides programmable APIs to configure and monitor AMD Instinct GPUs
+[![Trivy security scan](https://github.com/spraveenio/gpu-agent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/spraveenio/gpu-agent/actions/workflows/ci.yml?query=branch%3Amain)
 
 ## To build GPU Agent, follow the steps below:
 
