@@ -300,11 +300,11 @@ typedef struct aga_gpu_usage_s {
     uint32_t gfx_activity;
     uint32_t umc_activity;
     uint32_t mm_activity;
-    uint16_t vcn_activity[AGA_GPU_MAX_VCN];
-    uint16_t jpeg_activity[AGA_GPU_MAX_JPEG];
+    uint32_t vcn_activity[AGA_GPU_MAX_VCN];
+    uint32_t jpeg_activity[AGA_GPU_MAX_JPEG];
     uint32_t gfx_busy_inst[AGA_GPU_MAX_XCC];
-    uint16_t jpeg_busy[AGA_GPU_MAX_JPEG_ENG];
-    uint16_t vcn_busy[AGA_GPU_MAX_VCN];
+    uint32_t jpeg_busy[AGA_GPU_MAX_JPEG_ENG];
+    uint32_t vcn_busy[AGA_GPU_MAX_VCN];
 } aga_gpu_usage_t;
 
 /// \brief GPU current memory usage
@@ -689,7 +689,7 @@ typedef struct aga_gpu_stats_s {
     /// accumulated energy consumed (in uJ)
     double energy_consumed;
     /// power usage (in Watts)
-    uint32_t power_usage;
+    uint64_t power_usage;
     /// total correctable errors
     uint64_t total_correctable_errors;
     /// total uncorrectable errors

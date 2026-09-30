@@ -35,6 +35,7 @@ extern "C" {
 #include "nic/gpuagent/api/aga_state.hpp"
 #include "nic/gpuagent/api/smi/smi_api.hpp"
 #include "nic/gpuagent/api/smi/smi_state.hpp"
+#include "nic/gpuagent/api/smi/smi.hpp"
 #include "nic/gpuagent/api/smi/gimamdsmi/smi_session.hpp"
 #include "nic/gpuagent/api/smi/gimamdsmi/smi_utils.hpp"
 
@@ -601,12 +602,24 @@ smi_fill_pcie_status_ (aga_gpu_handle_t gpu_handle,
     } else {
         pcie_status->slot_type =
             smi_to_aga_pcie_slot_type(info.pcie_static.slot_type);
-        pcie_status->max_width = info.pcie_static.max_pcie_width;
-        pcie_status->max_speed = info.pcie_static.max_pcie_speed/1000;
+        // widen the narrow NA sentinels to the destination width
+        pcie_status->max_width =
+            AGA_WIDEN_UINT16_NA(info.pcie_static.max_pcie_width, UINT32_MAX);
+        if (info.pcie_static.max_pcie_speed != UINT32_MAX) {
+            pcie_status->max_speed = info.pcie_static.max_pcie_speed/1000;
+        } else {
+            pcie_status->max_speed = UINT32_MAX;
+        }
         pcie_status->version = info.pcie_static.pcie_interface_version;
-        pcie_status->width = info.pcie_metric.pcie_width;
-        pcie_status->speed = info.pcie_metric.pcie_speed/1000;
-        pcie_status->bandwidth = info.pcie_metric.pcie_bandwidth;
+        pcie_status->width =
+            AGA_WIDEN_UINT16_NA(info.pcie_metric.pcie_width, UINT32_MAX);
+        if (info.pcie_metric.pcie_speed != UINT32_MAX) {
+            pcie_status->speed = info.pcie_metric.pcie_speed/1000;
+        } else {
+            pcie_status->speed = UINT32_MAX;
+        }
+        pcie_status->bandwidth =
+            AGA_WIDEN_UINT32_NA(info.pcie_metric.pcie_bandwidth, UINT64_MAX);
     }
     amdsmi_ret = amdsmi_get_gpu_device_bdf(gpu_handle, &bdf);
     if (unlikely(amdsmi_ret != AMDSMI_STATUS_SUCCESS)) {
@@ -1017,18 +1030,22 @@ smi_walk_gpu_metrics (aga_gpu_handle_t gpu_handle, aga_gpu_stats_t *stats)
         case AMDSMI_METRIC_NAME_USAGE_VCN:
             if (idx < AGA_GPU_MAX_VCN) {
                 if (is_inst)
-                    stats->usage.vcn_busy[idx] = (uint16_t)m.val;
+                    stats->usage.vcn_busy[idx] =
+                        AGA_WIDEN_UINT16_NA((uint16_t)m.val, UINT32_MAX);
                 else
-                    stats->usage.vcn_activity[idx] = (uint16_t)m.val;
+                    stats->usage.vcn_activity[idx] =
+                        AGA_WIDEN_UINT16_NA((uint16_t)m.val, UINT32_MAX);
             }
             break;
         case AMDSMI_METRIC_NAME_USAGE_JPEG:
             if (is_inst) {
                 if (idx < AGA_GPU_MAX_JPEG_ENG)
-                    stats->usage.jpeg_busy[idx] = (uint16_t)m.val;
+                    stats->usage.jpeg_busy[idx] =
+                        AGA_WIDEN_UINT16_NA((uint16_t)m.val, UINT32_MAX);
             } else {
                 if (idx < AGA_GPU_MAX_JPEG)
-                    stats->usage.jpeg_activity[idx] = (uint16_t)m.val;
+                    stats->usage.jpeg_activity[idx] =
+                        AGA_WIDEN_UINT16_NA((uint16_t)m.val, UINT32_MAX);
             }
             break;
         case AMDSMI_METRIC_NAME_USAGE_GFX:
@@ -1116,6 +1133,7 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle_in,
         AGA_TRACE_ERR("Failed to get power information for GPU {}, err {}",
                       gpu_handle, amdsmi_ret);
     } else {
+        // uint64 source and destination: the NA sentinel is already full width
         stats->package_power = power_info.socket_power;
         stats->voltage.voltage = power_info.soc_voltage;
         stats->voltage.gfx_voltage = power_info.gfx_voltage;
@@ -1128,9 +1146,13 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle_in,
             AGA_TRACE_ERR("Failed to get GPU activity for GPU {}, err {}",
                           gpu_handle, amdsmi_ret);
         } else {
-            stats->usage.umc_activity = usage_info.umc_activity;
-            stats->usage.mm_activity = usage_info.mm_activity;
-            stats->usage.gfx_activity = usage_info.gfx_activity;
+            // gim reports some activity fields as INT32_MAX when unsupported
+            stats->usage.umc_activity =
+                AGA_WIDEN_INT32_NA(usage_info.umc_activity, UINT32_MAX);
+            stats->usage.mm_activity =
+                AGA_WIDEN_INT32_NA(usage_info.mm_activity, UINT32_MAX);
+            stats->usage.gfx_activity =
+                AGA_WIDEN_INT32_NA(usage_info.gfx_activity, UINT32_MAX);
         }
     }
     // fill VCN/JPEG/instantaneous activity and violation residency from the
