@@ -23,6 +23,7 @@ limitations under the License.
 #ifndef __AGA_API_SMI_HPP__
 #define __AGA_API_SMI_HPP__
 
+#include <cstdint>
 #include "nic/sdk/include/sdk/base.hpp"
 #ifdef ROCM_SMI
 typedef uint32_t aga_gpu_handle_t;
@@ -39,5 +40,27 @@ extern "C" {
 
 typedef amdsmi_processor_handle aga_gpu_handle_t;
 #endif
+
+// widen a uint8 NA sentinel (0xFF) to _dst_max_, else pass _val_ through
+#define AGA_WIDEN_UINT8_NA(_val_, _dst_max_)                                   \
+            (((_val_) == UINT8_MAX) ? (_dst_max_) : (_val_))
+
+// widen a uint16 NA sentinel (0xFFFF) to _dst_max_
+#define AGA_WIDEN_UINT16_NA(_val_, _dst_max_)                                  \
+            (((_val_) == UINT16_MAX) ? (_dst_max_) : (_val_))
+
+// widen a uint32 NA sentinel (0xFFFFFFFF) to _dst_max_
+#define AGA_WIDEN_UINT32_NA(_val_, _dst_max_)                                  \
+            (((_val_) == UINT32_MAX) ? (_dst_max_) : (_val_))
+
+// widen an engine-usage NA sentinel; 0xFFFF/INT32_MAX in amd-smi <=10.1,
+// UINT32_MAX in 10.2+
+#define AGA_WIDEN_INT32_NA(_val_, _dst_max_)                                   \
+            ((((_val_) == UINT16_MAX) || ((_val_) == (uint32_t)INT32_MAX) ||   \
+              ((_val_) == UINT32_MAX)) ? (_dst_max_) : (_val_))
+
+// widen a uint16 NA sentinel (0xFFFF) to the float NA sentinel (UINT32_MAX)
+#define AGA_WIDEN_FLOAT16_NA(_val_)                                            \
+            (((_val_) == UINT16_MAX) ? (float)UINT32_MAX : (float)(_val_))
 
 #endif    // __AGA_API_SMI_HPP__

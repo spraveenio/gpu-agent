@@ -33,6 +33,7 @@ extern "C" {
 #include "nic/gpuagent/api/aga_state.hpp"
 #include "nic/gpuagent/api/smi/smi_api.hpp"
 #include "nic/gpuagent/api/smi/smi_state.hpp"
+#include "nic/gpuagent/api/smi/smi.hpp"
 #include "nic/gpuagent/api/smi/amdsmi/smi_utils.hpp"
 
 // TODO:
@@ -643,7 +644,9 @@ smi_fill_clock_status_ (aga_gpu_handle_t gpu_handle,
         if (gfx_clock_spec) {
             clock_status = &status->clock_status[clk_cnt];
             clock_status->clock_type = AGA_GPU_CLOCK_TYPE_SYSTEM;
-            clock_status->frequency = metrics_info->current_gfxclks[i];
+            // widen the narrow (uint16) NA sentinel to the destination width
+            clock_status->frequency =
+                AGA_WIDEN_UINT16_NA(metrics_info->current_gfxclks[i], UINT32_MAX);
             clock_status->low_frequency = gfx_clock_spec->lo;
             clock_status->high_frequency = gfx_clock_spec->hi;
             clock_status->locked =
@@ -657,7 +660,8 @@ smi_fill_clock_status_ (aga_gpu_handle_t gpu_handle,
     if (mem_clock_spec) {
         clock_status = &status->clock_status[clk_cnt];
         clock_status->clock_type = AGA_GPU_CLOCK_TYPE_MEMORY;
-        clock_status->frequency = metrics_info->current_uclk;
+        clock_status->frequency =
+            AGA_WIDEN_UINT16_NA(metrics_info->current_uclk, UINT32_MAX);
         clock_status->low_frequency = mem_clock_spec->lo;
         clock_status->high_frequency = mem_clock_spec->hi;
         // locked is N/A for memory clock
@@ -670,7 +674,8 @@ smi_fill_clock_status_ (aga_gpu_handle_t gpu_handle,
         if (video_clock_spec) {
             clock_status = &status->clock_status[clk_cnt];
             clock_status->clock_type = AGA_GPU_CLOCK_TYPE_VIDEO;
-            clock_status->frequency = metrics_info->current_vclk0s[i];
+            clock_status->frequency =
+                AGA_WIDEN_UINT16_NA(metrics_info->current_vclk0s[i], UINT32_MAX);
             clock_status->low_frequency = video_clock_spec->lo;
             clock_status->high_frequency = video_clock_spec->hi;
             // locked is N/A for video clocks
@@ -685,7 +690,8 @@ smi_fill_clock_status_ (aga_gpu_handle_t gpu_handle,
         if (data_clock_spec) {
             clock_status = &status->clock_status[clk_cnt];
             clock_status->clock_type = AGA_GPU_CLOCK_TYPE_DATA;
-            clock_status->frequency = metrics_info->current_dclk0s[i];
+            clock_status->frequency =
+                AGA_WIDEN_UINT16_NA(metrics_info->current_dclk0s[i], UINT32_MAX);
             clock_status->low_frequency = data_clock_spec->lo;
             clock_status->high_frequency = data_clock_spec->hi;
             // locked is N/A for data clocks
@@ -707,7 +713,8 @@ smi_fill_clock_status_ (aga_gpu_handle_t gpu_handle,
         for (uint32_t i = 0; i < AMDSMI_MAX_NUM_CLKS; i++) {
             clock_status = &status->clock_status[clk_cnt];
             clock_status->clock_type = AGA_GPU_CLOCK_TYPE_SOC;
-            clock_status->frequency = metrics_info->current_socclks[i];
+            clock_status->frequency =
+                AGA_WIDEN_UINT16_NA(metrics_info->current_socclks[i], UINT32_MAX);
             clock_status->low_frequency = low_freq;
             clock_status->high_frequency = high_freq;
             // locked is N/A for SOC clocks
@@ -799,20 +806,25 @@ smi_fill_pcie_status_ (aga_gpu_handle_t gpu_handle,
     } else {
         pcie_status->slot_type =
             smi_to_aga_pcie_slot_type(info.pcie_static.slot_type);
-        pcie_status->max_width = info.pcie_static.max_pcie_width;
+        // widen the narrow (uint16) NA sentinel to the destination width
+        pcie_status->max_width =
+            AGA_WIDEN_UINT16_NA(info.pcie_static.max_pcie_width, UINT32_MAX);
         if (info.pcie_static.max_pcie_speed != AMDSMI_INVALID_UINT32) {
             pcie_status->max_speed = info.pcie_static.max_pcie_speed/1000;
         } else {
-            pcie_status->max_speed = 0;
+            pcie_status->max_speed = AMDSMI_INVALID_UINT32;
         }
         pcie_status->version = info.pcie_static.pcie_interface_version;
-        pcie_status->width = info.pcie_metric.pcie_width;
+        pcie_status->width =
+            AGA_WIDEN_UINT16_NA(info.pcie_metric.pcie_width, UINT32_MAX);
         if (info.pcie_metric.pcie_speed != AMDSMI_INVALID_UINT32) {
             pcie_status->speed = info.pcie_metric.pcie_speed/1000;
         } else {
-            pcie_status->speed = 0;
+            pcie_status->speed = AMDSMI_INVALID_UINT32;
         }
-        pcie_status->bandwidth = info.pcie_metric.pcie_bandwidth;
+        // widen the uint32 NA sentinel to the destination width
+        pcie_status->bandwidth =
+            AGA_WIDEN_UINT32_NA(info.pcie_metric.pcie_bandwidth, UINT64_MAX);
     }
     return SDK_RET_OK;
 }
@@ -888,8 +900,11 @@ smi_gpu_fill_status (aga_gpu_handle_t gpu_handle,
                         AGA_GPU_THROTTLING_STATUS_ON :
                         AGA_GPU_THROTTLING_STATUS_OFF;
             }
-            status->xgmi_status.width = metrics_info.xgmi_link_width;
-            status->xgmi_status.speed = metrics_info.xgmi_link_speed;
+            // widen the narrow (uint16) NA sentinel to the destination width
+            status->xgmi_status.width =
+                AGA_WIDEN_UINT16_NA(metrics_info.xgmi_link_width, UINT64_MAX);
+            status->xgmi_status.speed =
+                AGA_WIDEN_UINT16_NA(metrics_info.xgmi_link_speed, UINT64_MAX);
             status->vram_status.max_bandwidth = metrics_info.vram_max_bandwidth;
         } else {
             AGA_TRACE_ERR("GPU metrics info not available for GPU {}",
@@ -1356,14 +1371,22 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
     }
     if (metrics_info.common_header.structure_size != 0) {
         // power and voltage
-        stats->avg_package_power = metrics_info.average_socket_power;
-        stats->package_power = metrics_info.current_socket_power;
-        stats->power_usage = metrics_info.current_socket_power;
-        stats->voltage.voltage = metrics_info.voltage_soc;
-        stats->voltage.gfx_voltage = metrics_info.voltage_gfx;
-        stats->voltage.memory_voltage = metrics_info.voltage_mem;
+        // widen amd-smi's narrow (uint16) NA sentinel to the destination width
+        stats->avg_package_power =
+            AGA_WIDEN_UINT16_NA(metrics_info.average_socket_power, UINT64_MAX);
+        stats->package_power =
+            AGA_WIDEN_UINT16_NA(metrics_info.current_socket_power, UINT64_MAX);
+        stats->power_usage =
+            AGA_WIDEN_UINT16_NA(metrics_info.current_socket_power, UINT64_MAX);
+        stats->voltage.voltage =
+            AGA_WIDEN_UINT16_NA(metrics_info.voltage_soc, UINT64_MAX);
+        stats->voltage.gfx_voltage =
+            AGA_WIDEN_UINT16_NA(metrics_info.voltage_gfx, UINT64_MAX);
+        stats->voltage.memory_voltage =
+            AGA_WIDEN_UINT16_NA(metrics_info.voltage_mem, UINT64_MAX);
         // fan speed
-        stats->fan_speed = metrics_info.current_fan_speed;
+        stats->fan_speed =
+            AGA_WIDEN_UINT16_NA(metrics_info.current_fan_speed, UINT64_MAX);
         // xgmi link stats
         if (!AGA_GPU_SKIP(filter, skip_xgmi_stats)) {
             for (uint32_t i = 0; i < AGA_GPU_MAX_XGMI_LINKS; i++) {
@@ -1384,19 +1407,22 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
                                           &stats->violation_stats);
             }
         }
-        // fill the energy consumed
-        stats->energy_consumed = metrics_info.energy_accumulator *
-                                     g_energy_counter_resolution;
-        // fill temperature
+        // energy: a NA accumulator (UINT64_MAX) must not be scaled; map it to
+        // the float NA sentinel (a double >= UINT64_MAX)
+        stats->energy_consumed =
+            (metrics_info.energy_accumulator == UINT64_MAX) ?
+                (double)UINT64_MAX :
+                (double)metrics_info.energy_accumulator * g_energy_counter_resolution;
+        // temperature: widen the uint16 NA sentinel to the float NA sentinel
         stats->temperature.edge_temperature =
-            (float)metrics_info.temperature_edge;
+            AGA_WIDEN_FLOAT16_NA(metrics_info.temperature_edge);
         stats->temperature.junction_temperature =
-            (float)metrics_info.temperature_hotspot;
+            AGA_WIDEN_FLOAT16_NA(metrics_info.temperature_hotspot);
         stats->temperature.memory_temperature =
-            (float)metrics_info.temperature_mem;
+            AGA_WIDEN_FLOAT16_NA(metrics_info.temperature_mem);
         for (uint32_t i = 0; i < AGA_GPU_MAX_HBM; i++) {
             stats->temperature.hbm_temperature[i] =
-                (float)metrics_info.temperature_hbm[i];
+                AGA_WIDEN_FLOAT16_NA(metrics_info.temperature_hbm[i]);
         }
         // pcie stats
         if (!AGA_GPU_SKIP(filter, skip_pcie_stats)) {
@@ -1416,24 +1442,31 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
         if (!AGA_GPU_SKIP(filter, skip_activity_stats) &&
             !is_partitioned) {
             // non-partitioned mode: use cached metrics_info
-            stats->usage.gfx_activity = metrics_info.average_gfx_activity;
-            stats->usage.umc_activity = metrics_info.average_umc_activity;
-            stats->usage.mm_activity = metrics_info.average_mm_activity;
+            stats->usage.gfx_activity =
+                AGA_WIDEN_UINT16_NA(metrics_info.average_gfx_activity, UINT32_MAX);
+            stats->usage.umc_activity =
+                AGA_WIDEN_UINT16_NA(metrics_info.average_umc_activity, UINT32_MAX);
+            stats->usage.mm_activity =
+                AGA_WIDEN_UINT16_NA(metrics_info.average_mm_activity, UINT32_MAX);
             stats->gfx_activity_accumulated = metrics_info.gfx_activity_acc;
             stats->mem_activity_accumulated = metrics_info.mem_activity_acc;
 
-            // VCN activity and busy stats
+            // VCN activity and busy stats; widen the uint16 NA sentinel
             for (uint16_t i = 0; i < AMDSMI_MAX_NUM_VCN; i++) {
-                stats->usage.vcn_activity[i] = metrics_info.vcn_activity[i];
-                stats->usage.vcn_busy[i] = metrics_info.xcp_stats[0].vcn_busy[i];
+                stats->usage.vcn_activity[i] =
+                    AGA_WIDEN_UINT16_NA(metrics_info.vcn_activity[i], UINT32_MAX);
+                stats->usage.vcn_busy[i] = AGA_WIDEN_UINT16_NA(
+                    metrics_info.xcp_stats[0].vcn_busy[i], UINT32_MAX);
             }
 
-            // JPEG activity and busy stats
+            // JPEG activity and busy stats; widen the uint16 NA sentinel
             for (uint16_t i = 0; i < AMDSMI_MAX_NUM_JPEG; i++) {
-                stats->usage.jpeg_activity[i] = metrics_info.jpeg_activity[i];
+                stats->usage.jpeg_activity[i] = AGA_WIDEN_UINT16_NA(
+                    metrics_info.jpeg_activity[i], UINT32_MAX);
             }
             for (uint16_t i = 0; i < AMDSMI_MAX_NUM_JPEG_ENG_V1; i++) {
-                stats->usage.jpeg_busy[i] = metrics_info.xcp_stats[0].jpeg_busy[i];
+                stats->usage.jpeg_busy[i] = AGA_WIDEN_UINT16_NA(
+                    metrics_info.xcp_stats[0].jpeg_busy[i], UINT32_MAX);
             }
 
             // GFX busy instances
@@ -1502,22 +1535,25 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
         } else {
             if (!AGA_GPU_SKIP(filter, skip_activity_stats)) {
                 // activity information
-                stats->usage.gfx_activity = metrics_info.average_gfx_activity;
-                stats->usage.umc_activity = metrics_info.average_umc_activity;
-                stats->usage.mm_activity = metrics_info.average_mm_activity;
+                stats->usage.gfx_activity =
+                    AGA_WIDEN_UINT16_NA(metrics_info.average_gfx_activity, UINT32_MAX);
+                stats->usage.umc_activity =
+                    AGA_WIDEN_UINT16_NA(metrics_info.average_umc_activity, UINT32_MAX);
+                stats->usage.mm_activity =
+                    AGA_WIDEN_UINT16_NA(metrics_info.average_mm_activity, UINT32_MAX);
                 stats->gfx_activity_accumulated = metrics_info.gfx_activity_acc;
                 stats->mem_activity_accumulated = metrics_info.mem_activity_acc;
 
                 // VCN busy stats (activity not available in partition mode)
                 for (uint16_t i = 0; i < AMDSMI_MAX_NUM_VCN; i++) {
-                    stats->usage.vcn_busy[i] =
-                        metrics_info.xcp_stats[0].vcn_busy[i];
+                    stats->usage.vcn_busy[i] = AGA_WIDEN_UINT16_NA(
+                        metrics_info.xcp_stats[0].vcn_busy[i], UINT32_MAX);
                 }
 
                 // JPEG busy stats (activity not available in partition mode)
                 for (uint16_t i = 0; i < AMDSMI_MAX_NUM_JPEG_ENG_V1; i++) {
-                    stats->usage.jpeg_busy[i] =
-                        metrics_info.xcp_stats[0].jpeg_busy[i];
+                    stats->usage.jpeg_busy[i] = AGA_WIDEN_UINT16_NA(
+                        metrics_info.xcp_stats[0].jpeg_busy[i], UINT32_MAX);
                 }
 
                 // GFX busy instances
@@ -1545,8 +1581,10 @@ smi_gpu_fill_stats (aga_gpu_handle_t gpu_handle,
             }
         }
         if (cached_metrics.common_header.structure_size != 0) {
-            stats->usage.gfx_activity = cached_metrics.average_gfx_activity;
-            stats->usage.umc_activity = cached_metrics.average_umc_activity;
+            stats->usage.gfx_activity =
+                AGA_WIDEN_UINT16_NA(cached_metrics.average_gfx_activity, UINT32_MAX);
+            stats->usage.umc_activity =
+                AGA_WIDEN_UINT16_NA(cached_metrics.average_umc_activity, UINT32_MAX);
         }
     }
     return SDK_RET_OK;
