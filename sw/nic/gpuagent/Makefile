@@ -36,15 +36,41 @@ export BLD_BIN_DIR           := ${BLD_ARCH_DIR}/bin
 export BLD_GEN_DIR           := ${BLD_ARCH_DIR}/gen
 export BLD_PROTOGEN_DIR      := ${BLD_GEN_DIR}/proto
 export SDKDIR                := $(TOPDIR)/nic/sdk
+export REPO_ROOT             := $(realpath $(TOPDIR)/..)
+IMAGE_DEPS_PREFIX            ?= /opt/gpuagent-deps
+EXPECTED_DEPS_HASH           := $(shell bash $(REPO_ROOT)/tools/build-container/deps-hash.sh 2>/dev/null)
+
+# Prefer image-baked libs when the content hash matches. Otherwise install into
+# the workspace build prefix. Default `make` does not compile third-party if
+# $(GPUAGENT_DEPS_PREFIX)/.gpuagent-deps-$(EXPECTED_DEPS_HASH) exists.
+# Command-line GPUAGENT_DEPS_PREFIX wins; image ENV is only a hint (hash still
+# has to match, so a stale builder image cannot silently link old libs).
+ifeq ($(origin GPUAGENT_DEPS_PREFIX),command line)
+else ifneq ($(EXPECTED_DEPS_HASH),)
+  ifneq ($(wildcard $(IMAGE_DEPS_PREFIX)/.gpuagent-deps-$(EXPECTED_DEPS_HASH)),)
+    GPUAGENT_DEPS_PREFIX := $(IMAGE_DEPS_PREFIX)
+  else
+    GPUAGENT_DEPS_PREFIX := $(BLD_DIR)
+  endif
+else
+  ifneq ($(wildcard $(IMAGE_DEPS_PREFIX)/bin/protoc),)
+    GPUAGENT_DEPS_PREFIX := $(IMAGE_DEPS_PREFIX)
+  else
+    GPUAGENT_DEPS_PREFIX := $(BLD_DIR)
+  endif
+endif
+export GPUAGENT_DEPS_PREFIX
+export PREFIX                := $(GPUAGENT_DEPS_PREFIX)
+
 export CC                    := g++
-export PROTOC                := ${BLD_DIR}/bin/protoc
+export PROTOC                := ${GPUAGENT_DEPS_PREFIX}/bin/protoc
 
 export SPDLOG_INC_DIR        ?= ${TOPDIR}/nic/third-party/spdlog/include
-export PROTOBUF_INCLUDE      := ${BLD_DIR}/include
+export PROTOBUF_INCLUDE      := ${GPUAGENT_DEPS_PREFIX}/include
 export GRPC_INCLUDE          := ${PROTOBUF_INCLUDE} /usr/local/include/grpc/include
-export GRPC_CPP_PLUGIN       := ${BLD_BIN_DIR}/grpc_cpp_plugin
-export GRPC_PY_PLUGIN        := ${BLD_BIN_DIR}/grpc_python_plugin
-export PROTOC_LIB_PATH       := ${BLD_DIR}/lib
+export GRPC_CPP_PLUGIN       := ${GPUAGENT_DEPS_PREFIX}/bin/grpc_cpp_plugin
+export GRPC_PY_PLUGIN        := ${GPUAGENT_DEPS_PREFIX}/bin/grpc_python_plugin
+export PROTOC_LIB_PATH       := ${GPUAGENT_DEPS_PREFIX}/lib:${GPUAGENT_DEPS_PREFIX}/lib64
 export OTHER_THIRD_PARTY_INC ?= ${SPDLOG_INC_DIR} ${GFLAGS_INC_DIR} ${GRPC_INCLUDE}
 
 GIT_COMMIT                   ?= $(shell git rev-list -1 HEAD --abbrev-commit)
@@ -83,7 +109,7 @@ SRC_C := $(shell find $(TOPDIR) -type d \( -path $(EXCLUDE_DIRS) \) -prune -o \
                                 -type f -name "*.c" -print)
 INC_COMMON   := $(TOPDIR) $(BLD_ARCH_DIR) $(BLD_PROTOGEN_DIR) \
                 $(TOPDIR)/nic/sdk/ $(OTHER_THIRD_PARTY_INC) \
-                ${BLD_DIR}/include
+                ${GPUAGENT_DEPS_PREFIX}/include
 INC_AMD_SMI  := ${TOPDIR}/nic/third-party/rocm/amd_smi_lib/include/
 INC_GIM_SMI  := ${TOPDIR}/nic/third-party/rocm/gim_amd_smi_lib/include/
 
@@ -134,7 +160,9 @@ INCS_MOCK       := $(addprefix -I,${INC_COMMON})
 LDFLAGS_COMMON  := -pthread -rdynamic -no-canonical-prefixes -Wl,--gc-sections \
                    -Wl,-z,relro,-z,now -Wl,--build-id=md5 -Wl,--hash-style=gnu \
                    -L$(BLD_LIB_DIR) -Wl,-rpath,$(BLD_LIB_DIR) \
-				   -Wl,-rpath-link,$(BLD_LIB_DIR) -L${BLD_DIR}/lib -L${BLD_DIR}/lib64 \
+				   -Wl,-rpath-link,$(BLD_LIB_DIR) \
+                   -L${GPUAGENT_DEPS_PREFIX}/lib -L${GPUAGENT_DEPS_PREFIX}/lib64 \
+                   -Wl,-rpath,${GPUAGENT_DEPS_PREFIX}/lib -Wl,-rpath,${GPUAGENT_DEPS_PREFIX}/lib64 \
                    -l:libprotobuf.a -Wl,--start-group -lgrpc++_reflection -lgrpc++ -lgrpc -lgpr -lupb -lcares \
                    -laddress_sorting -l:libgrpc.a -l:libre2.a -labsl_synchronization -labsl_periodic_sampler -labsl_time \
                    -labsl_time_zone -labsl_int128 -labsl_bad_optional_access -labsl_bad_any_cast_impl -labsl_bad_variant_access\
@@ -203,16 +231,30 @@ all: build-libs gogo-protos gen-protos $(OBJ) $(OBJ_GIM) $(OBJ_MOCK)
 	$(CC) $(OBJ_MOCK) $(LDFLAGS_MOCK) -o $(BLD_BIN_DIR)/$(TARGET)_mock
 	${MAKE} gpuctl
 
-BUILD_LIBS_STAMP := $(BLD_OUT_DIR)/.build_libs_done
+ifeq ($(EXPECTED_DEPS_HASH),)
+BUILD_LIBS_STAMP := $(GPUAGENT_DEPS_PREFIX)/bin/protoc
+else
+BUILD_LIBS_STAMP := $(GPUAGENT_DEPS_PREFIX)/.gpuagent-deps-$(EXPECTED_DEPS_HASH)
+endif
 
-# these are maintained in seperate file to keep the variables and settings
-# contained (TBD, clean up later)
+# Content-aware stamp: filename includes third-party hash. Image-baked prefix
+# already has this file; source installs write it next to the workspace prefix.
+# `make clean` does not delete the stamp, so third-party is not rebuilt.
 $(BUILD_LIBS_STAMP):
-	@mkdir -p $(dir $@)
-	$(MAKE) -f Makefile.lib third-party-libs
+	@mkdir -p $(GPUAGENT_DEPS_PREFIX) $(dir $@)
+	$(MAKE) -f Makefile.lib third-party-libs PREFIX=$(GPUAGENT_DEPS_PREFIX)
+	@echo "$(EXPECTED_DEPS_HASH)" > $(GPUAGENT_DEPS_PREFIX)/.gpuagent-deps-hash
 	@touch $@
 
+.PHONY: build-libs rebuild-deps third-party-libs clean-deps
 build-libs: $(BUILD_LIBS_STAMP)
+
+# Force a workspace source rebuild (does not write into the image prefix).
+rebuild-deps third-party-libs:
+	$(MAKE) -f Makefile.lib third-party-libs PREFIX=$(BLD_DIR)
+	@mkdir -p $(BLD_DIR)
+	@echo "$(EXPECTED_DEPS_HASH)" > $(BLD_DIR)/.gpuagent-deps-hash
+	@touch $(BLD_DIR)/.gpuagent-deps-$(EXPECTED_DEPS_HASH)
 
 # grouped-target (&:, make>=4.3): one protoc call declared producer of all its
 # .cc, so %.o:%.cc resolves every generated .o under -j. stamp order-only = protoc.
@@ -267,7 +309,10 @@ $(OBJ_DIR_MOCK)/%.o: $(TOPDIR)/%.c
 	$(CC) $(CFLAGS)  $(INCS_MOCK) -DAMD_SMI -D__FNAME__=__FILE__ -DGPUAGENT_VERSION=\"$(GPUAGENT_VERSION)\" -c $< -o $@
 
 clean:
-	rm -rf $(BLD_BIN_DIR) $(OBJ_DIR) $(OBJ_DIR_GIM) $(OBJ_DIR_MOCK) $(BLD_PROTOGEN_DIR); \
-	rm -rf $(GRPC_DIR)/cmake/build; \
-	rm -rf $(BLD_OUT_DIR)/.build_libs_done \
-	rm -rf $(ABSEIL_DIR)/cmake/build; sync
+	rm -rf $(BLD_BIN_DIR) $(OBJ_DIR) $(OBJ_DIR_GIM) $(OBJ_DIR_MOCK) $(BLD_PROTOGEN_DIR)
+
+# Wipe workspace-compiled third-party artifacts only. Image prefix is left intact.
+clean-deps:
+	rm -rf $(GRPC_DIR)/cmake/build $(ABSEIL_DIR)/cmake/build
+	rm -f $(BLD_DIR)/.gpuagent-deps-hash $(BLD_DIR)/.gpuagent-deps-*
+	rm -rf $(BLD_OUT_DIR)/.build_libs_done

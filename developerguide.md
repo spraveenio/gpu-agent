@@ -8,7 +8,12 @@ Before starting, ensure you have Docker installed and running with the user perm
 
 ## Environment and Build Setup
 
-Refer to the [README.md](README.md)
+Refer to the [README.md](README.md).
+
+Third-party C++ libraries (protobuf, gRPC, Abseil, ZeroMQ, libev, Boost) are
+baked into the builder image at `/opt/gpuagent-deps`. Rebuild that image when
+those pins change; do not expect `make` inside the container to compile them on
+the default path. Details: [sw/nic/third-party/README.md](sw/nic/third-party/README.md).
 
 # Architecture
 

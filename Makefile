@@ -61,5 +61,7 @@ docker-shell:
 		bash -c " cd $(CONTAINER_WORKDIR) && git config --global --add safe.directory $(CONTAINER_WORKDIR) && bash"
 
 .PHONY: build-container
+# Compiles pinned third-party libs into the image (/opt/gpuagent-deps).
+# Re-run when tools/build-container/deps-hash.sh changes.
 build-container:
 	${MAKE} -C tools/build-container

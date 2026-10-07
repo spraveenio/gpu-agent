@@ -4,7 +4,7 @@ set -euo pipefail
 dir=/usr/src/github.com/ROCm/gpu-agent
 netns=/var/run/netns
 
-PATH=/usr/local/go/bin:$PATH
+PATH=/opt/gpuagent-deps/bin:/usr/local/go/bin:$PATH
 
 trap term INT TERM
 
@@ -35,8 +35,10 @@ if [[ -n "${USER_NAME:-}" && -n "${USER_UID:-}" && -n "${USER_GID:-}" ]]; then
 	chown -R "$USER_UID":"$USER_GID" /home/$USER_NAME
 
 	su - "$USER_NAME" -c "echo 'export GOPATH=/home/$USER_NAME/go' >> ~/.bashrc"
-	su - "$USER_NAME" -c "echo 'export PATH=\$GOPATH/bin:/usr/local/go/bin:\$PATH' >> ~/.bashrc"
-	su - "$USER_NAME" -c "echo 'export PATH=/usr/local/go/bin:\$PATH' >> ~/.bashrc"
+	su - "$USER_NAME" -c "echo 'export PATH=\$GOPATH/bin:/usr/local/go/bin:/opt/gpuagent-deps/bin:\$PATH' >> ~/.bashrc"
+	su - "$USER_NAME" -c "echo 'export PATH=/usr/local/go/bin:/opt/gpuagent-deps/bin:\$PATH' >> ~/.bashrc"
+	su - "$USER_NAME" -c "echo 'export GPUAGENT_DEPS_PREFIX=/opt/gpuagent-deps' >> ~/.bashrc"
+	su - "$USER_NAME" -c "echo 'export LD_LIBRARY_PATH=/opt/gpuagent-deps/lib:/opt/gpuagent-deps/lib64:\${LD_LIBRARY_PATH:-}' >> ~/.bashrc"
 	exec su - "$USER_NAME" -c "$@"
 else
 	echo "Running as default user (root)..."

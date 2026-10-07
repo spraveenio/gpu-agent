@@ -10,10 +10,11 @@
 	path = sw/nic/third-party/libzmq
 	url = git@github.com:zeromq/libzmq.git
 	branch = v4.3.4
+# Pinned by gitlink 76bb24329e8bf5f39704eb10d21b9a80befa7c81.
+# Do not set branch = master; `git submodule update --remote` would float.
 [submodule "sw/nic/third-party/abseil-cpp"]
 	path = sw/nic/third-party/abseil-cpp
 	url = git@github.com:abseil/abseil-cpp.git
-	branch = master
 [submodule "sw/nic/third-party/boost"]
 	path = sw/nic/third-party/boost_1_88_0
 	url = git@github.com:boostorg/boost.git

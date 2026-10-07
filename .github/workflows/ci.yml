@@ -16,7 +16,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     permissions:
       contents: read
       security-events: write
@@ -38,17 +38,44 @@ jobs:
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Compute third-party hash
+        id: deps
+        run: |
+          hash=$(bash tools/build-container/deps-hash.sh)
+          test -n "$hash"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          echo "third-party hash: $hash"
+
+      - name: Restore third-party sysroot cache
+        id: deps-cache
+        uses: actions/cache@v4
+        with:
+          path: tools/build-container/prebuilt-deps/gpuagent-deps.tar.gz
+          key: gpuagent-deps-rhel9-${{ steps.deps.outputs.hash }}
+
       - name: Build builder container
         uses: docker/build-push-action@v7
         with:
-          context: tools/build-container
+          context: .
           file: tools/build-container/Dockerfile.rhel9
           load: true
-          tags: gpuagent-builder-rhel:9
+          target: ${{ steps.deps-cache.outputs.cache-hit == 'true' && 'with-prebuilt-deps' || 'with-deps' }}
+          tags: |
+            gpuagent-builder-rhel:9
+            gpuagent-builder-rhel:9-${{ steps.deps.outputs.hash }}
           build-args: |
             GO_VERSION=${{ steps.go-version.outputs.version }}
+            GPUAGENT_DEPS_HASH=${{ steps.deps.outputs.hash }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Export third-party sysroot for cache
+        if: steps.deps-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p tools/build-container/prebuilt-deps
+          docker run --rm --entrypoint tar gpuagent-builder-rhel:9 \
+            -C /opt -czf - gpuagent-deps \
+            > tools/build-container/prebuilt-deps/gpuagent-deps.tar.gz
 
       - name: Build gpuagent
         id: build

@@ -1,0 +1,11 @@
+.git
+**/.git
+.github
+sw/nic/build
+sw/nic/build*
+sw/nic/sdk
+sw/nic/gpuagent/**
+!sw/nic/gpuagent/Makefile.lib
+sw/vendor
+sw/nic/third-party/rocm
+sw/nic/third-party/spdlog

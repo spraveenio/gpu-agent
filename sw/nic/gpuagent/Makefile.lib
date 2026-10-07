@@ -16,6 +16,7 @@
 
 CC                    := gcc
 CXX                   := g++
+PREFIX                ?= $(BLD_DIR)
 
 # libs serial across each other: each recipe already runs make -j$(nproc)
 # internally; concurrent libs = Nlibs x nproc oversubscribe -> OOM grpc/boost.
@@ -30,7 +31,7 @@ protobuf-build:
 	@echo "Building protobuf..."
 	cd $(PROTOBUF_DIR) && \
 	./autogen.sh && \
-	./configure --prefix=$(BLD_DIR) && \
+	./configure --prefix=$(PREFIX) && \
 	make -j$(shell nproc) && \
 	make install
 
@@ -39,7 +40,7 @@ abseil-build:
 	cd $(ABSEIL_DIR) && \
 	mkdir -p cmake/build && \
 	cd cmake/build && \
-	cmake -DCMAKE_INSTALL_PREFIX=$(BLD_DIR) \
+	cmake -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		../../ && \
 	make -j$(shell nproc) && \
 	make install
@@ -51,35 +52,41 @@ grpc-build: protobuf-build abseil-build
 	cd cmake/build && \
 	cmake -DgRPC_INSTALL=ON \
 		-DgRPC_BUILD_TESTS=OFF \
-		-DCMAKE_INSTALL_PREFIX=$(BLD_DIR) \
+		-DCMAKE_INSTALL_PREFIX=$(PREFIX) \
 		../../ && \
 	make -j$(shell nproc) && \
 	make install && \
+	mkdir -p $(PREFIX)/bin && \
+	cp -vf grpc_cpp_plugin $(PREFIX)/bin/grpc_cpp_plugin && \
+	cp -vf grpc_python_plugin $(PREFIX)/bin/grpc_python_plugin
+ifneq ($(BLD_BIN_DIR),)
+ifneq ($(BLD_BIN_DIR),$(PREFIX)/bin)
 	mkdir -p $(BLD_BIN_DIR) && \
-	cp -vf grpc_cpp_plugin $(BLD_BIN_DIR)/grpc_cpp_plugin && \
-	cp -vf grpc_python_plugin $(BLD_BIN_DIR)/grpc_python_plugin && \
-	rm -rf $(BLD_DIR)/lib/cmake && \
-	rm -rf $(GRPC_DIR)/cmake/build
+	cp -vf $(GRPC_DIR)/cmake/build/grpc_cpp_plugin $(BLD_BIN_DIR)/grpc_cpp_plugin && \
+	cp -vf $(GRPC_DIR)/cmake/build/grpc_python_plugin $(BLD_BIN_DIR)/grpc_python_plugin
+endif
+endif
+	rm -rf $(PREFIX)/lib/cmake
 
 zeromq-build:
 	@echo "Building ZeroMQ..."
 	cd $(ZEROMQ_DIR) && \
 	./autogen.sh && \
-	./configure --prefix=$(BLD_DIR) && \
+	./configure --prefix=$(PREFIX) && \
 	make -j$(shell nproc) && \
 	make install
 
 libev-build:
 	@echo "Building libev..."
 	cd $(LIBEV_DIR) && \
-	./configure --prefix=$(BLD_DIR) && \
+	./configure --prefix=$(PREFIX) && \
 	make -j$(shell nproc) && \
 	make install
 
 boost-build:
 	@echo "Building Boost..."
 	cd $(BOOST_DIR) && \
-	./bootstrap.sh --prefix=$(BLD_DIR) && \
+	./bootstrap.sh --prefix=$(PREFIX) && \
 	./b2 install && \
-	rm -rf $(BLD_DIR)/share
+	rm -rf $(PREFIX)/share
 

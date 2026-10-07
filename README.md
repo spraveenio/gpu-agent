@@ -8,7 +8,15 @@
 $ git submodule update --init  --recursive -f
 ```
 
-### create build container image (required once)
+### create build container image (required once, or when third-party deps change)
+
+`make build-container` compiles protobuf, gRPC, Abseil, ZeroMQ, libev, and Boost
+into the image at `/opt/gpuagent-deps`. That step is slow; everyday gpuagent
+builds reuse the prefix and do not recompile those libraries.
+
+Rebuild the image when you bump a third-party submodule (or libev). The image is
+also tagged with `tools/build-container/deps-hash.sh`. See
+[sw/nic/third-party/README.md](sw/nic/third-party/README.md).
 
 ```bash
 $ make build-container
@@ -68,9 +76,25 @@ $ make build-container
 
 ### To clean the build artifacts (run it within build-container)
 
+`make clean` removes gpuagent objects and binaries only. It does **not** rebuild
+or delete third-party libs.
+
 ```bash
 [root@dev gpu-agent]# make -C sw/nic/gpuagent clean
 [root@dev gpu-agent]# 
+```
+
+To force a workspace source rebuild of third-party libs (without rebuilding the
+builder image):
+
+```bash
+[root@dev gpu-agent]# make -C sw/nic/gpuagent rebuild-deps
+```
+
+To discard workspace-installed third-party artifacts:
+
+```bash
+[root@dev gpu-agent]# make -C sw/nic/gpuagent clean-deps
 ```
 
 # Things to note

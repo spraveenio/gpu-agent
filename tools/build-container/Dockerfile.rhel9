@@ -1,12 +1,12 @@
-# This container provides a development environment with all necessary 
-# compilation and development tools pre-installed.
+# Builder image with compilers, Go, and pinned third-party libs at
+# /opt/gpuagent-deps. Rebuild this image when tools/build-container/deps-hash.sh
+# changes (third-party submodule / libev / Makefile.lib).
 ARG BUILD_BASE_IMAGE=registry.access.redhat.com/ubi9/ubi:9.8
-FROM ${BUILD_BASE_IMAGE}
+FROM ${BUILD_BASE_IMAGE} AS toolchain
 ARG GO_VERSION=1.25.13
 
 LABEL maintainer="praveenkumar.shanmugam@amd.com"
 
-# Install build dependencies
 WORKDIR /usr/src/github.com/Rocm/gpu-agent/
 
 RUN dnf install -y --allowerasing \
@@ -36,8 +36,42 @@ RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
 ENV PATH=$PATH:/usr/local/go/bin:/root/go/bin
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-  
-ADD ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
+FROM toolchain AS deps-compile
+ARG GPUAGENT_DEPS_HASH=unknown
+COPY tools/build-container/install-third-party.sh /usr/local/bin/install-third-party.sh
+COPY sw/nic/gpuagent/Makefile.lib /tmp/Makefile.lib
+COPY sw/nic/third-party/protobuf /tmp/third-party/protobuf
+COPY sw/nic/third-party/grpc /tmp/third-party/grpc
+COPY sw/nic/third-party/libzmq /tmp/third-party/libzmq
+COPY sw/nic/third-party/abseil-cpp /tmp/third-party/abseil-cpp
+COPY sw/nic/third-party/boost_1_88_0 /tmp/third-party/boost_1_88_0
+COPY sw/nic/third-party/libev-4.33 /tmp/third-party/libev-4.33
+RUN chmod +x /usr/local/bin/install-third-party.sh && \
+    GPUAGENT_DEPS_PREFIX=/opt/gpuagent-deps \
+    THIRD_PARTY_ROOT=/tmp/third-party \
+    MAKEFILE_LIB=/tmp/Makefile.lib \
+    GPUAGENT_DEPS_HASH="${GPUAGENT_DEPS_HASH}" \
+    /usr/local/bin/install-third-party.sh && \
+    rm -rf /tmp/third-party
+
+FROM toolchain AS runtime-base
+ENV GPUAGENT_DEPS_PREFIX=/opt/gpuagent-deps
+ENV PATH=/opt/gpuagent-deps/bin:$PATH:/usr/local/go/bin:/root/go/bin
+ENV LD_LIBRARY_PATH=/opt/gpuagent-deps/lib:/opt/gpuagent-deps/lib64:/usr/local/lib:$LD_LIBRARY_PATH
+ENV PKG_CONFIG_PATH=/opt/gpuagent-deps/lib/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+COPY tools/build-container/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
+
+# CI fast path: inject a cached sysroot tarball (see .github/workflows/ci.yml).
+FROM runtime-base AS with-prebuilt-deps
+ARG GPUAGENT_DEPS_HASH=unknown
+COPY tools/build-container/prebuilt-deps/gpuagent-deps.tar.gz /tmp/gpuagent-deps.tar.gz
+RUN mkdir -p /opt && tar -C /opt -xzf /tmp/gpuagent-deps.tar.gz && rm -f /tmp/gpuagent-deps.tar.gz && \
+    echo "${GPUAGENT_DEPS_HASH}" > /opt/gpuagent-deps/.gpuagent-deps-hash && \
+    touch /opt/gpuagent-deps/.gpuagent-deps-${GPUAGENT_DEPS_HASH}
+
+# Default: compile third-party into the image (local `make build-container`).
+FROM runtime-base AS with-deps
+COPY --from=deps-compile /opt/gpuagent-deps /opt/gpuagent-deps
