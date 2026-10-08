@@ -48,7 +48,15 @@ aga_gpu_watch_attr_id_to_units (aga_gpu_watch_attr_id_t id)
     case AGA_GPU_WATCH_ATTR_ID_PCIE_BANDWIDTH:
         return std::string("Mb/s");
     case AGA_GPU_WATCH_ATTR_ID_GPU_UTIL:
+    case AGA_GPU_WATCH_ATTR_ID_UMC_ACTIVITY:
+    case AGA_GPU_WATCH_ATTR_ID_MM_ACTIVITY:
         return std::string("%");
+    case AGA_GPU_WATCH_ATTR_ID_AVG_POWER:
+        return std::string("Watts");
+    case AGA_GPU_WATCH_ATTR_ID_GFX_VOLTAGE:
+    case AGA_GPU_WATCH_ATTR_ID_SOC_VOLTAGE:
+    case AGA_GPU_WATCH_ATTR_ID_MEM_VOLTAGE:
+        return std::string("mV");
     case AGA_GPU_WATCH_ATTR_ID_GPU_MEMORY_USAGE:
         return std::string("MB");
     default:
@@ -80,6 +88,18 @@ aga_gpu_watch_attr_id_to_proto (aga_gpu_watch_attr_id_t id)
         return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_PCIE_BANDWIDTH;
     case AGA_GPU_WATCH_ATTR_ID_GPU_UTIL:
         return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_GPU_UTIL;
+    case AGA_GPU_WATCH_ATTR_ID_UMC_ACTIVITY:
+        return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_UMC_ACTIVITY;
+    case AGA_GPU_WATCH_ATTR_ID_MM_ACTIVITY:
+        return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_MM_ACTIVITY;
+    case AGA_GPU_WATCH_ATTR_ID_AVG_POWER:
+        return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_AVG_POWER;
+    case AGA_GPU_WATCH_ATTR_ID_GFX_VOLTAGE:
+        return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_GFX_VOLTAGE;
+    case AGA_GPU_WATCH_ATTR_ID_SOC_VOLTAGE:
+        return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_SOC_VOLTAGE;
+    case AGA_GPU_WATCH_ATTR_ID_MEM_VOLTAGE:
+        return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_MEM_VOLTAGE;
     case AGA_GPU_WATCH_ATTR_ID_GPU_MEMORY_USAGE:
         return amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_GPU_MEMORY_USAGE;
     case AGA_GPU_WATCH_ATTR_ID_ECC_CORRECT_TOTAL:

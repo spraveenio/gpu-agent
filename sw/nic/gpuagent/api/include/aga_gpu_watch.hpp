@@ -34,6 +34,14 @@ limitations under the License.
 /// max. string length of string watch attribute
 #define AGA_MAX_WATCH_ATTR_STR            256
 #define AGA_MAX_GPU_WATCH_CLIENT_STR      128
+/// allowed range and default for the fast attribute sampling period, in seconds
+#define AGA_GPU_WATCH_FAST_PERIOD_MIN     1
+#define AGA_GPU_WATCH_FAST_PERIOD_MAX     60
+#define AGA_GPU_WATCH_FAST_PERIOD_DFLT    1
+/// allowed range and default for the slow attribute sampling period, in seconds
+#define AGA_GPU_WATCH_SLOW_PERIOD_MIN     5
+#define AGA_GPU_WATCH_SLOW_PERIOD_MAX     3600
+#define AGA_GPU_WATCH_SLOW_PERIOD_DFLT    5
 
 /// \brief    GPU attributes that are watchable
 typedef enum aga_gpu_watch_attr_id_e {
@@ -102,7 +110,13 @@ typedef enum aga_gpu_watch_attr_id_e {
     AGA_GPU_WATCH_ATTR_ID_XGMI_4_THRPUT       = 62,
     AGA_GPU_WATCH_ATTR_ID_XGMI_5_THRPUT       = 63,
     AGA_GPU_WATCH_ATTR_ID_PCIE_BANDWIDTH      = 64,
-    AGA_GPU_WATCH_ATTRS_MAX                   = 65,
+    AGA_GPU_WATCH_ATTR_ID_UMC_ACTIVITY        = 65,
+    AGA_GPU_WATCH_ATTR_ID_MM_ACTIVITY         = 66,
+    AGA_GPU_WATCH_ATTR_ID_AVG_POWER           = 67,
+    AGA_GPU_WATCH_ATTR_ID_GFX_VOLTAGE         = 68,
+    AGA_GPU_WATCH_ATTR_ID_SOC_VOLTAGE         = 69,
+    AGA_GPU_WATCH_ATTR_ID_MEM_VOLTAGE         = 70,
+    AGA_GPU_WATCH_ATTRS_MAX                   = 71,
 } aga_gpu_watch_attr_id_t;
 
 /// \brief    GPU watch attribute value type
@@ -159,6 +173,10 @@ typedef struct aga_gpu_watch_spec_s {
     /// list of attributes to be monitor
     uint16_t num_attrs;
     aga_gpu_watch_attr_id_t attr_id[AGA_GPU_WATCH_ATTRS_MAX];
+    /// sampling period of fast attributes, also the subscriber notify period
+    uint32_t fast_period_secs;
+    /// sampling period of slow attributes, always >= fast_period_secs
+    uint32_t slow_period_secs;
 } aga_gpu_watch_spec_t;
 
 /// \brief GPU watch operational information

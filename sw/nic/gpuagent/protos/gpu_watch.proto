@@ -46,8 +46,9 @@ service GPUWatchSvc {
 
 // identifiers of GPU watch attributes
 // NOTE:
-// not all watch attributes are supported in all GPUs. if an attribute is
-// is not supported, 0 will be returned as attribute value
+// not all watch attributes are supported in all GPUs. when an attribute cannot
+// be read, the not-applicable sentinel (all bits set, widened to the width of
+// the attribute in the GPUGet path) is returned, same convention as GPUGet
 enum GPUWatchAttrId {
   GPU_WATCH_ATTR_ID_INVALID             = 0;
   GPU_WATCH_ATTR_ID_GPU_CLOCK           = 1;
@@ -114,6 +115,12 @@ enum GPUWatchAttrId {
   GPU_WATCH_ATTR_ID_XGMI_4_THRPUT       = 62;
   GPU_WATCH_ATTR_ID_XGMI_5_THRPUT       = 63;
   GPU_WATCH_ATTR_ID_PCIE_BANDWIDTH      = 64;
+  GPU_WATCH_ATTR_ID_UMC_ACTIVITY        = 65;
+  GPU_WATCH_ATTR_ID_MM_ACTIVITY         = 66;
+  GPU_WATCH_ATTR_ID_AVG_POWER           = 67;
+  GPU_WATCH_ATTR_ID_GFX_VOLTAGE         = 68;
+  GPU_WATCH_ATTR_ID_SOC_VOLTAGE         = 69;
+  GPU_WATCH_ATTR_ID_MEM_VOLTAGE         = 70;
 }
 
 // values of GPU watch attributes
@@ -155,6 +162,13 @@ message GPUWatchSpec {
   // NOTE:
   // atleast one GPU watch attribute must be specified
   repeated GPUWatchAttrId Attribute = 3;
+  // sampling period in seconds for fast moving attributes (clocks,
+  // temperatures, power, utilization), also the subscriber notify period.
+  // 0 selects the default
+  uint32                  FastPeriodSecs = 4;
+  // sampling period in seconds for slow moving attributes (ECC and XGMI
+  // counters). must be >= FastPeriodSecs. 0 selects the default
+  uint32                  SlowPeriodSecs = 5;
 }
 
 // operational state of the GPUWatch object

@@ -53,6 +53,18 @@ aga_gpu_watch_attr_id_to_api_spec (GPUWatchAttrId id)
         return AGA_GPU_WATCH_ATTR_ID_PCIE_BANDWIDTH;
     case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_GPU_UTIL:
         return AGA_GPU_WATCH_ATTR_ID_GPU_UTIL;
+    case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_UMC_ACTIVITY:
+        return AGA_GPU_WATCH_ATTR_ID_UMC_ACTIVITY;
+    case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_MM_ACTIVITY:
+        return AGA_GPU_WATCH_ATTR_ID_MM_ACTIVITY;
+    case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_AVG_POWER:
+        return AGA_GPU_WATCH_ATTR_ID_AVG_POWER;
+    case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_GFX_VOLTAGE:
+        return AGA_GPU_WATCH_ATTR_ID_GFX_VOLTAGE;
+    case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_SOC_VOLTAGE:
+        return AGA_GPU_WATCH_ATTR_ID_SOC_VOLTAGE;
+    case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_MEM_VOLTAGE:
+        return AGA_GPU_WATCH_ATTR_ID_MEM_VOLTAGE;
     case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_GPU_MEMORY_USAGE:
         return AGA_GPU_WATCH_ATTR_ID_GPU_MEMORY_USAGE;
     case amdgpu::GPUWatchAttrId::GPU_WATCH_ATTR_ID_ECC_CORRECT_TOTAL:
@@ -173,17 +185,60 @@ aga_gpu_watch_proto_to_api_spec (aga_gpu_watch_spec_t *api_spec,
                                  const GPUWatchSpec& proto_spec)
 {
     sdk_ret_t ret;
+    uint32_t fast_secs, slow_secs;
 
     aga_obj_key_proto_to_api_spec(&api_spec->key, proto_spec.id());
+    if (proto_spec.gpu_size() > AGA_MAX_GPU) {
+        AGA_TRACE_ERR("GPU watch {} number of GPUs specified, {}, is more "
+                      "than {} supported", api_spec->key.str(),
+                      proto_spec.gpu_size(), AGA_MAX_GPU);
+        return SDK_RET_INVALID_ARG;
+    }
     for (int i = 0; i < proto_spec.gpu_size(); i++) {
         aga_obj_key_proto_to_api_spec(&api_spec->gpu[i], proto_spec.gpu(i));
     }
     api_spec->num_gpu = proto_spec.gpu_size();
+    if (proto_spec.attribute_size() > AGA_GPU_WATCH_ATTRS_MAX) {
+        AGA_TRACE_ERR("GPU watch {} number of attributes specified, {}, is "
+                      "more than {} supported", api_spec->key.str(),
+                      proto_spec.attribute_size(), AGA_GPU_WATCH_ATTRS_MAX);
+        return SDK_RET_INVALID_ARG;
+    }
     for (int i = 0; i < proto_spec.attribute_size(); i++) {
         api_spec->attr_id[i] =
             aga_gpu_watch_attr_id_to_api_spec(proto_spec.attribute(i));
     }
     api_spec->num_attrs = proto_spec.attribute_size();
+    api_spec->fast_period_secs = proto_spec.fastperiodsecs();
+    api_spec->slow_period_secs = proto_spec.slowperiodsecs();
+    if (api_spec->fast_period_secs &&
+        ((api_spec->fast_period_secs < AGA_GPU_WATCH_FAST_PERIOD_MIN) ||
+         (api_spec->fast_period_secs > AGA_GPU_WATCH_FAST_PERIOD_MAX))) {
+        AGA_TRACE_ERR("GPU watch {} fast period {} out of allowed range {}-{}",
+                      api_spec->key.str(), api_spec->fast_period_secs,
+                      AGA_GPU_WATCH_FAST_PERIOD_MIN,
+                      AGA_GPU_WATCH_FAST_PERIOD_MAX);
+        return SDK_RET_INVALID_ARG;
+    }
+    if (api_spec->slow_period_secs &&
+        ((api_spec->slow_period_secs < AGA_GPU_WATCH_SLOW_PERIOD_MIN) ||
+         (api_spec->slow_period_secs > AGA_GPU_WATCH_SLOW_PERIOD_MAX))) {
+        AGA_TRACE_ERR("GPU watch {} slow period {} out of allowed range {}-{}",
+                      api_spec->key.str(), api_spec->slow_period_secs,
+                      AGA_GPU_WATCH_SLOW_PERIOD_MIN,
+                      AGA_GPU_WATCH_SLOW_PERIOD_MAX);
+        return SDK_RET_INVALID_ARG;
+    }
+    // 0 selects the default, so compare the periods that end up in effect
+    fast_secs = api_spec->fast_period_secs ? api_spec->fast_period_secs :
+                    AGA_GPU_WATCH_FAST_PERIOD_DFLT;
+    slow_secs = api_spec->slow_period_secs ? api_spec->slow_period_secs :
+                    AGA_GPU_WATCH_SLOW_PERIOD_DFLT;
+    if (slow_secs < fast_secs) {
+        AGA_TRACE_ERR("GPU watch {} slow period {} is less than fast period {}",
+                      api_spec->key.str(), slow_secs, fast_secs);
+        return SDK_RET_INVALID_ARG;
+    }
     return SDK_RET_OK;
 }
 

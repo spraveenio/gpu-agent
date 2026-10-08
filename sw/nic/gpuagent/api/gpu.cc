@@ -263,6 +263,24 @@ gpu_entry::fill_gpu_watch_stats(aga_gpu_watch_attrs_t *stats) {
         case AGA_GPU_WATCH_ATTR_ID_GPU_UTIL:
             attr_val->long_val = stats_.gpu_util;
             break;
+        case AGA_GPU_WATCH_ATTR_ID_UMC_ACTIVITY:
+            attr_val->long_val = stats_.umc_activity;
+            break;
+        case AGA_GPU_WATCH_ATTR_ID_MM_ACTIVITY:
+            attr_val->long_val = stats_.mm_activity;
+            break;
+        case AGA_GPU_WATCH_ATTR_ID_AVG_POWER:
+            attr_val->long_val = stats_.avg_power;
+            break;
+        case AGA_GPU_WATCH_ATTR_ID_GFX_VOLTAGE:
+            attr_val->long_val = stats_.gfx_voltage;
+            break;
+        case AGA_GPU_WATCH_ATTR_ID_SOC_VOLTAGE:
+            attr_val->long_val = stats_.soc_voltage;
+            break;
+        case AGA_GPU_WATCH_ATTR_ID_MEM_VOLTAGE:
+            attr_val->long_val = stats_.mem_voltage;
+            break;
         case AGA_GPU_WATCH_ATTR_ID_GPU_MEMORY_USAGE:
             attr_val->long_val = stats_.gpu_memory_usage;
             break;

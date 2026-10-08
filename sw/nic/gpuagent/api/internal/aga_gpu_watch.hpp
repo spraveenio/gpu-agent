@@ -52,6 +52,18 @@ typedef struct aga_gpu_watch_fields_s {
     uint64_t  pcie_bandwidth;
     /// gpu utilization
     uint64_t gpu_util;
+    /// gpu umc (memory controller) activity (in %)
+    uint64_t umc_activity;
+    /// gpu mm (multimedia) activity (in %)
+    uint64_t mm_activity;
+    /// average socket power (in Watts)
+    uint64_t avg_power;
+    /// gfx core voltage (in mV)
+    uint64_t gfx_voltage;
+    /// soc voltage (in mV)
+    uint64_t soc_voltage;
+    /// memory voltage (in mV)
+    uint64_t mem_voltage;
     /// gpu VRAM memory usage
     uint64_t gpu_memory_usage;
     /// gpu total VRM memory
