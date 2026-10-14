@@ -85,8 +85,8 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
                aga_gpu_watch_db_t *watch_db, bool refresh_slow) {
     amdsmi_error_count_t ec;
     amdsmi_status_t amdsmi_ret;
-    uint64_t pcie_tx = 0, pcie_rx = 0;
     bool ecc_read_succeeded = false;
+    uint64_t pcie_tx = 0, pcie_rx = 0;
     uint64_t total_correctable_count = 0;
     uint64_t total_uncorrectable_count = 0;
 
@@ -243,14 +243,8 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
                                             metrics.data());
         if (amdsmi_ret == AMDSMI_STATUS_SUCCESS) {
             metrics.resize(metric_count);
-            std::map<amdsmi_metric_name_t, uint64_t> mval;
-            for (const auto &m : metrics) {
-                // keep GPU-level aggregates only (skip per-XCP/AID instances)
-                if (m.res_group == AMDSMI_METRIC_RES_GROUP_GPU) {
-                    mval[m.name] = m.val;
-                }
-            }
             auto &wi = watch_db->watch_info[gpu_id];
+            std::map<amdsmi_metric_name_t, uint64_t> mval;
             auto set_field = [&](amdsmi_metric_name_t n, uint64_t *dst) {
                 auto it = mval.find(n);
                 if (it != mval.end()) {
@@ -267,6 +261,12 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
                     *dst = AGA_WIDEN_UINT16_NA((uint16_t)it->second, UINT64_MAX);
                 }
             };
+            for (const auto &m : metrics) {
+                // keep GPU-level aggregates only (skip per-XCP/AID instances)
+                if (m.res_group == AMDSMI_METRIC_RES_GROUP_GPU) {
+                    mval[m.name] = m.val;
+                }
+            }
             set_field_na(AMDSMI_METRIC_NAME_CLK_GFX,        &wi.gpu_clock);
             set_field(AMDSMI_METRIC_NAME_CLK_MEM,           &wi.memory_clock);
             set_field(AMDSMI_METRIC_NAME_TEMP_HOTSPOT_CURR, &wi.gpu_temperature);
@@ -459,13 +459,13 @@ sdk_ret_t
 smi_state::gpu_watch_notify_subscribers(void) {
     sdk_ret_t ret;
     aga_obj_key_t key;
+    aga_gpu_watch_client_ctxt_t *client_ctxt;
+    gpu_watch_subscriber_info_t inactive_subscriber;
+    vector<gpu_watch_subscriber_info_t> inactive_subscribers;
     // heap-allocated: large struct (AGA_MAX_GPU x AGA_GPU_WATCH_ATTRS_MAX
     // array-valued attrs) would overflow the thread stack at the current cap
     std::unique_ptr<aga_gpu_watch_info_t> info_holder(new aga_gpu_watch_info_t());
     aga_gpu_watch_info_t &info = *info_holder;
-    aga_gpu_watch_client_ctxt_t *client_ctxt;
-    gpu_watch_subscriber_info_t inactive_subscriber;
-    vector<gpu_watch_subscriber_info_t> inactive_subscribers;
 
     for (auto& it : gpu_watch_subscriber_db_.gpu_watch_map) {
         key = it.first;
@@ -497,9 +497,9 @@ watch_timer_cb_ (event::timer_t *timer)
     sdk_ret_t ret;
     bool refresh_slow;
     aga_task_spec_t task_spec = {};
-    static bool slow_primed = false;
     static uint16_t fast_ticks = 0;
     static uint16_t slow_ticks = 0;
+    static bool slow_primed = false;
 
     // only start updating watch fields once at least one client has subscribed
     // to a watch group

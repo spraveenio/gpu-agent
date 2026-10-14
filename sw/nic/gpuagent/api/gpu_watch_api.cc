@@ -110,13 +110,13 @@ typedef struct aga_gpu_watch_read_args_s {
 bool
 aga_gpu_watch_info_from_entry (void *entry, void *ctxt)
 {
+    gpu_watch_entry *gpu_watch = (gpu_watch_entry *)entry;
+    aga_gpu_watch_read_args_t *args = (aga_gpu_watch_read_args_t *)ctxt;
     // heap-allocated: aga_gpu_watch_info_t is large (stats for AGA_MAX_GPU x
     // AGA_GPU_WATCH_ATTRS_MAX attrs, each with array-valued slots) and would
     // risk a stack overflow in this read/notify path at the current cap
     std::unique_ptr<aga_gpu_watch_info_t> info_holder(new aga_gpu_watch_info_t());
     aga_gpu_watch_info_t &info = *info_holder;
-    gpu_watch_entry *gpu_watch = (gpu_watch_entry *)entry;
-    aga_gpu_watch_read_args_t *args = (aga_gpu_watch_read_args_t *)ctxt;
 
     if (gpu_watch->in_use()) {
         // some API operation is in progress on this object, skip it

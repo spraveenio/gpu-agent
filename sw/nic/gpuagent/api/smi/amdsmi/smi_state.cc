@@ -83,26 +83,30 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
                amdsmi_processor_handle gpu_handle,
                aga_gpu_watch_db_t *watch_db, bool refresh_slow) {
     double time_sec;
-    bool power_from_bulk = false;
+    uint64_t mem64 = 0;
     uint64_t counter_key;
     int64_t int64_val = 0;
     amdsmi_error_count_t ec;
     uint64_t uint64_val = 0;
+    uint64_t used_vram_mb = 0;
     amdsmi_clk_type_t clk_type;
     amdsmi_status_t amdsmi_ret;
+    bool power_from_bulk = false;
     bool bulk_get_succeeded = false;
+    bool ecc_read_succeeded = false;
+    uint64_t pcie_tx = 0, pcie_rx = 0;
+    uint64_t total_deferred_count = 0;
+    bool violation_get_succeeded = false;
     amdsmi_pcie_info_t pcie_info = { 0 };
     uint64_t total_correctable_count = 0;
     amdsmi_temperature_type_t sensor_type;
     uint64_t total_uncorrectable_count = 0;
-    uint64_t total_deferred_count = 0;
     amdsmi_frequencies_t freq_info = { 0 };
     amdsmi_power_info_t power_info = { 0 };
     amdsmi_engine_usage_t usage_info = { 0 };
     amdsmi_gpu_metrics_t gpu_metrics = { 0 };
-    uint64_t pcie_tx = 0, pcie_rx = 0;
-    bool ecc_read_succeeded = false;
     amdsmi_counter_value_t counter_value = { 0 };
+    amdsmi_violation_status_t violation_status = {};
 
     // seed slow tier fields (ECC/XGMI/violation counters, clocks, memory) from
     // the last slow sample so they carry forward on ticks that skip the slow
@@ -293,8 +297,6 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
 
     // violations are slow tier; fetch the status once per slow refresh so all
     // violation attrs below fill from a single call rather than one call each
-    amdsmi_violation_status_t violation_status = {};
-    bool violation_get_succeeded = false;
     if (refresh_slow) {
         amdsmi_ret = amdsmi_get_violation_status(gpu_handle, &violation_status);
         if (amdsmi_ret == AMDSMI_STATUS_SUCCESS) {
@@ -305,8 +307,6 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
     // memory totals/used/free and PCIe link speed are dedicated amdsmi calls;
     // fetch once per slow refresh
     if (refresh_slow) {
-        uint64_t mem64 = 0;
-        uint64_t used_vram_mb = 0;
         if (amdsmi_get_gpu_memory_total(gpu_handle, AMDSMI_MEM_TYPE_VRAM,
                                         &mem64) == AMDSMI_STATUS_SUCCESS) {
             watch_db->watch_info[gpu_id].total_vram = mem64 / 1024 / 1024;
@@ -339,7 +339,7 @@ smi_state::smi_watcher_update_all_watch_fields_(uint32_t gpu_id,
         watch_db->watch_info[gpu_id].free_gtt =
             watch_db->watch_info[gpu_id].total_gtt -
             watch_db->watch_info[gpu_id].used_gtt;
-        amdsmi_pcie_info_t pcie_info = {};
+        pcie_info = { 0 };
         if (amdsmi_get_pcie_info(gpu_handle, &pcie_info) ==
                 AMDSMI_STATUS_SUCCESS) {
             if (pcie_info.pcie_metric.pcie_speed != UINT32_MAX) {
@@ -1338,13 +1338,13 @@ sdk_ret_t
 smi_state::gpu_watch_notify_subscribers(void) {
     sdk_ret_t ret;
     aga_obj_key_t key;
+    aga_gpu_watch_client_ctxt_t *client_ctxt;
+    gpu_watch_subscriber_info_t inactive_subscriber;
+    vector<gpu_watch_subscriber_info_t> inactive_subscribers;
     // heap-allocated: the struct is large (AGA_MAX_GPU x AGA_GPU_WATCH_ATTRS_MAX
     // array-valued attrs) and this notify path would overflow the thread stack
     std::unique_ptr<aga_gpu_watch_info_t> info_holder(new aga_gpu_watch_info_t());
     aga_gpu_watch_info_t &info = *info_holder;
-    aga_gpu_watch_client_ctxt_t *client_ctxt;
-    gpu_watch_subscriber_info_t inactive_subscriber;
-    vector<gpu_watch_subscriber_info_t> inactive_subscribers;
 
     for (auto& it : gpu_watch_subscriber_db_.gpu_watch_map) {
         key = it.first;
@@ -1376,9 +1376,9 @@ watch_timer_cb_ (event::timer_t *timer)
     sdk_ret_t ret;
     bool refresh_slow;
     aga_task_spec_t task_spec = {};
-    static bool slow_primed = false;
     static uint16_t fast_ticks = 0;
     static uint16_t slow_ticks = 0;
+    static bool slow_primed = false;
 
     // only start updating watch fields once at least one client has subscribed
     // to a watch group
