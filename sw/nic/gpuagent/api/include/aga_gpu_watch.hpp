@@ -34,6 +34,14 @@ limitations under the License.
 /// max. string length of string watch attribute
 #define AGA_MAX_WATCH_ATTR_STR            256
 #define AGA_MAX_GPU_WATCH_CLIENT_STR      128
+/// allowed range and default for the fast attribute sampling period, in seconds
+#define AGA_GPU_WATCH_FAST_PERIOD_MIN     1
+#define AGA_GPU_WATCH_FAST_PERIOD_MAX     60
+#define AGA_GPU_WATCH_FAST_PERIOD_DFLT    1
+/// allowed range and default for the slow attribute sampling period, in seconds
+#define AGA_GPU_WATCH_SLOW_PERIOD_MIN     5
+#define AGA_GPU_WATCH_SLOW_PERIOD_MAX     3600
+#define AGA_GPU_WATCH_SLOW_PERIOD_DFLT    5
 
 /// \brief    GPU attributes that are watchable
 typedef enum aga_gpu_watch_attr_id_e {
@@ -102,7 +110,88 @@ typedef enum aga_gpu_watch_attr_id_e {
     AGA_GPU_WATCH_ATTR_ID_XGMI_4_THRPUT       = 62,
     AGA_GPU_WATCH_ATTR_ID_XGMI_5_THRPUT       = 63,
     AGA_GPU_WATCH_ATTR_ID_PCIE_BANDWIDTH      = 64,
-    AGA_GPU_WATCH_ATTRS_MAX                   = 65,
+    AGA_GPU_WATCH_ATTR_ID_UMC_ACTIVITY        = 65,
+    AGA_GPU_WATCH_ATTR_ID_MM_ACTIVITY         = 66,
+    AGA_GPU_WATCH_ATTR_ID_AVG_POWER           = 67,
+    AGA_GPU_WATCH_ATTR_ID_GFX_VOLTAGE         = 68,
+    AGA_GPU_WATCH_ATTR_ID_SOC_VOLTAGE         = 69,
+    AGA_GPU_WATCH_ATTR_ID_MEM_VOLTAGE         = 70,
+    // array-valued (indexed) attributes; value rides the LONG_ARRAY variant
+    AGA_GPU_WATCH_ATTR_ID_HBM_TEMP            = 71,
+    AGA_GPU_WATCH_ATTR_ID_VCN_ACTIVITY       = 72,
+    AGA_GPU_WATCH_ATTR_ID_JPEG_ACTIVITY      = 73,
+    AGA_GPU_WATCH_ATTR_ID_CLOCK_FREQ_CURRENT = 74,
+    AGA_GPU_WATCH_ATTR_ID_CLOCK_FREQ_MIN     = 75,
+    AGA_GPU_WATCH_ATTR_ID_CLOCK_FREQ_MAX     = 76,
+    AGA_GPU_WATCH_ATTR_ID_XGMI_LINK_RX       = 77,
+    AGA_GPU_WATCH_ATTR_ID_XGMI_LINK_TX       = 78,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_GFX_CLK_BELOW_HOST_LIMIT_POWER_ACC   = 79,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_GFX_CLK_BELOW_HOST_LIMIT_THERMAL_ACC = 80,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_LOW_UTIL_ACC                         = 81,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_GFX_CLK_BELOW_HOST_LIMIT_TOTAL_ACC   = 82,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_GFX_CLK_BELOW_HOST_LIMIT_POWER_PCT   = 83,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_GFX_CLK_BELOW_HOST_LIMIT_THERMAL_PCT = 84,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_LOW_UTIL_PCT                         = 85,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_GFX_CLK_BELOW_HOST_LIMIT_TOTAL_PCT   = 86,
+    AGA_GPU_WATCH_ATTR_ID_GFX_BUSY_INST      = 87,
+    AGA_GPU_WATCH_ATTR_ID_VCN_BUSY_INST      = 88,
+    AGA_GPU_WATCH_ATTR_ID_JPEG_BUSY_INST     = 89,
+    // flat scalar violation counters; value rides the LONG variant
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_CURRENT_ACC_COUNTER          = 90,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_PROC_HOT_RESIDENCY_ACC       = 91,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_PPT_RESIDENCY_ACC            = 92,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_SOCKET_THERMAL_RESIDENCY_ACC = 93,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_VR_THERMAL_RESIDENCY_ACC     = 94,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_HBM_THERMAL_RESIDENCY_ACC    = 95,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_PROC_HOT_RESIDENCY_PCT       = 96,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_PPT_RESIDENCY_PCT            = 97,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_SOCKET_THERMAL_RESIDENCY_PCT = 98,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_VR_THERMAL_RESIDENCY_PCT     = 99,
+    AGA_GPU_WATCH_ATTR_ID_VIOLATION_HBM_THERMAL_RESIDENCY_PCT    = 100,
+    // ECC deferred counters
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_TOTAL       = 101,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_SDMA        = 102,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_GFX         = 103,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_MMHUB       = 104,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_ATHUB       = 105,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_PCIE_BIF    = 106,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_HDP         = 107,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_XGMI_WAFL   = 108,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_DF          = 109,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_SMN         = 110,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_SEM         = 111,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_MP0         = 112,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_MP1         = 113,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_FUSE        = 114,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_UMC         = 115,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_MCA         = 116,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_VCN         = 117,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_JPEG        = 118,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_IH          = 119,
+    AGA_GPU_WATCH_ATTR_ID_ECC_DEF_MPIO        = 120,
+    // PCIe accumulated counters
+    AGA_GPU_WATCH_ATTR_ID_PCIE_REPLAY_COUNT          = 121,
+    AGA_GPU_WATCH_ATTR_ID_PCIE_RECOVERY_COUNT        = 122,
+    AGA_GPU_WATCH_ATTR_ID_PCIE_REPLAY_ROLLOVER_COUNT = 123,
+    AGA_GPU_WATCH_ATTR_ID_PCIE_NACK_SENT_COUNT       = 124,
+    AGA_GPU_WATCH_ATTR_ID_PCIE_NACK_RECEIVED_COUNT   = 125,
+    // additional bulk scalars
+    AGA_GPU_WATCH_ATTR_ID_GPU_POWER_USAGE     = 126,
+    AGA_GPU_WATCH_ATTR_ID_VRAM_MAX_BANDWIDTH  = 127,
+    AGA_GPU_WATCH_ATTR_ID_EDGE_TEMP           = 128,
+    // memory totals/used/free and PCIe link speed
+    AGA_GPU_WATCH_ATTR_ID_TOTAL_VRAM          = 129,
+    AGA_GPU_WATCH_ATTR_ID_TOTAL_VISIBLE_VRAM  = 130,
+    AGA_GPU_WATCH_ATTR_ID_TOTAL_GTT           = 131,
+    AGA_GPU_WATCH_ATTR_ID_USED_VISIBLE_VRAM   = 132,
+    AGA_GPU_WATCH_ATTR_ID_USED_GTT            = 133,
+    AGA_GPU_WATCH_ATTR_ID_FREE_VRAM           = 134,
+    AGA_GPU_WATCH_ATTR_ID_FREE_VISIBLE_VRAM   = 135,
+    AGA_GPU_WATCH_ATTR_ID_FREE_GTT            = 136,
+    AGA_GPU_WATCH_ATTR_ID_PCIE_SPEED          = 137,
+    AGA_GPU_WATCH_ATTR_ID_PCIE_MAX_SPEED      = 138,
+    AGA_GPU_WATCH_ATTR_ID_ENERGY_CONSUMED     = 139,
+    AGA_GPU_WATCH_ATTRS_MAX                   = 140,
 } aga_gpu_watch_attr_id_t;
 
 /// \brief    GPU watch attribute value type
@@ -114,7 +203,24 @@ typedef enum aga_gpu_watch_attr_value_type_e {
     AGA_GPU_WATCH_ATTR_VALUE_TYPE_LONG   = 2,
     // attribute value type string
     AGA_GPU_WATCH_ATTR_VALUE_TYPE_STRING = 3,
+    // attribute value type long array (array-valued/indexed attributes)
+    AGA_GPU_WATCH_ATTR_VALUE_TYPE_LONG_ARRAY = 4,
 } aga_gpu_watch_attr_value_type_t;
+
+/// max elements in an array-valued watch attribute; 40 covers the largest
+/// array (JPEG, AGA_GPU_MAX_JPEG_ENG engines), also the multi-XCD clock set
+#define AGA_GPU_WATCH_MAX_INDEXED_VALS    40
+
+/// \brief    one element of an array-valued watch attribute
+typedef struct aga_gpu_watch_indexed_val_s {
+    /// 0-based element index, becomes the *_index label on the exporter
+    uint32_t index;
+    /// optional qualifier enum (e.g. clock_type); 0 means none, dropped by
+    /// the exporter. Fills struct alignment padding, so size stays 16 bytes
+    uint32_t sub_type;
+    /// element value
+    uint64_t val;
+} aga_gpu_watch_indexed_val_t;
 
 /// \brief    watch GPU attribute value
 typedef struct aga_gpu_watch_attr_value_s {
@@ -125,6 +231,11 @@ typedef struct aga_gpu_watch_attr_value_s {
         float float_val;
         uint64_t long_val;
         char str_val[AGA_MAX_WATCH_ATTR_STR + 1];
+        /// set when type is LONG_ARRAY
+        struct {
+            uint32_t num_vals;
+            aga_gpu_watch_indexed_val_t vals[AGA_GPU_WATCH_MAX_INDEXED_VALS];
+        } long_array;
     };
 } aga_gpu_watch_attr_value_t;
 
@@ -159,6 +270,10 @@ typedef struct aga_gpu_watch_spec_s {
     /// list of attributes to be monitor
     uint16_t num_attrs;
     aga_gpu_watch_attr_id_t attr_id[AGA_GPU_WATCH_ATTRS_MAX];
+    /// sampling period of fast attributes, also the subscriber notify period
+    uint32_t fast_period_secs;
+    /// sampling period of slow attributes, always >= fast_period_secs
+    uint32_t slow_period_secs;
 } aga_gpu_watch_spec_t;
 
 /// \brief GPU watch operational information
