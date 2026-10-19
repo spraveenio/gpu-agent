@@ -22,3 +22,13 @@ updates:
         patterns: ["ROCm/rocm-security-gh*"]
       github-actions:
         patterns: ["*"]
+
+  - package-ecosystem: "gomod"
+    directory: "/sw/nic/gpuagent"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
+    groups:
+      gomod:
+        patterns: ["*"]

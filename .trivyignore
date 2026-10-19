@@ -1,0 +1,9 @@
+# Copyright Advanced Micro Devices, Inc.
+# SPDX-License-Identifier: MIT
+#
+# DS-0002 (no non-root USER): tools/build-container/Dockerfile.{rhel9,ubu2204}
+# intentionally start as root. entrypoint.sh dynamically creates a user
+# matching the host UID/GID (when USER_NAME/USER_UID/USER_GID are passed)
+# and execs into it via `su`, defaulting to root otherwise. A static
+# Dockerfile USER would break this remap.
+DS-0002
