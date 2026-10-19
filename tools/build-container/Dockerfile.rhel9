@@ -27,7 +27,7 @@ RUN dnf install -y --allowerasing \
     yum \
     && dnf clean all
 
-RUN yum install -y sudo
+RUN yum install -y sudo && yum clean all
 
 RUN wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
